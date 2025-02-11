@@ -12,12 +12,17 @@ export default function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex space-x-8">
-            <Link href="/dashboard">
-              <a className="text-gray-900 hover:text-gray-700">Dashboard</a>
+            <Link href="/dashboard" className="text-gray-900 hover:text-gray-700">
+              Dashboard
             </Link>
-            <Link href="/assessment">
-              <a className="text-gray-900 hover:text-gray-700">Assessment</a>
+            <Link href="/assessment" className="text-gray-900 hover:text-gray-700">
+              Assessment
             </Link>
+            {user.role === 'admin' && (
+              <Link href="/admin" className="text-gray-900 hover:text-gray-700">
+                Admin Portal
+              </Link>
+            )}
           </div>
           <Button
             variant="ghost"

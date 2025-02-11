@@ -8,6 +8,7 @@ import Navigation from "./components/Navigation";
 import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import Assessment from "./pages/assessment";
+import Admin from "./pages/admin";
 import NotFound from "./pages/not-found";
 
 function PrivateRoute({ component: Component, ...rest }: { component: any }) {
@@ -43,6 +44,9 @@ function App() {
             </Route>
             <Route path="/assessment">
               {() => <PrivateRoute component={Assessment} />}
+            </Route>
+            <Route path="/admin">
+              {() => <PrivateRoute component={Admin} />}
             </Route>
             <Route component={NotFound} />
           </Switch>
