@@ -1,0 +1,102 @@
+"Create a web application for a Field Leadership Assessment Tool based on John Maxwell’s 5 Levels of Leadership. The app will allow both a leader and their manager to complete an assessment and automatically generate a gap analysis, final leadership score, and improvement recommendations.
+Core Features
+1. User Authentication
+•	Use Firebase Authentication (email & password login)
+•	Three user roles: Administrator, Leader and Manager
+•	Secure database to store responses
+2. Assessment Form
+•	40 questions divided into 3 leadership categories:
+o	Positional Leadership (Authority, Responsibility)
+o	Permission Leadership (Trust, Relationships)
+o	Production Leadership (Results, Accountability)
+Section 1: Positional Leadership (Title-Based Leadership)
+Assessing authority, clarity, and responsibility in leadership role
+These questions evaluate how effectively a leader establishes authority and operates within their role. Leadership based on position alone is the lowest level of leadership (Maxwell, 2011), and it must be strengthened through relationships and results.
+11.	I clearly understand my responsibilities as a leader. (Maxwell emphasizes that clarity in responsibility builds credibility.)
+12.	I consistently communicate expectations to my team. (Kotter, 1996, notes that strong leaders articulate vision and direction.)
+13.	My team follows my directions because of my position. (A leader who relies solely on position lacks influence.)
+14.	I make decisions confidently within my role’s authority. (Goleman, 1998, identifies decisiveness as a key leadership trait.)
+15.	I enforce company policies fairly and consistently. (Fairness strengthens legitimacy and respect.)
+16.	I take responsibility for both successes and failures in my team. (Accountability fosters trust and reliability.)
+17.	My team respects my authority as their leader. (Respect must be earned beyond just a title.)
+18.	I am proactive in solving problems rather than waiting for direction. (Leaders must anticipate and act.)
+19.	I stay updated on policies, procedures, and industry trends relevant to my role. (Learning is key to sustained leadership success.)
+20.	I demonstrate professionalism and set the tone for workplace culture. (A leader’s behavior shapes the team’s norms.)
+________________________________________
+Section 2: Permission Leadership (Relationship-Based Leadership)
+Assessing trust, communication, and team engagement
+Maxwell’s second level of leadership emphasizes that people follow leaders because they want to, not because they have to (Maxwell, 2011). This section evaluates a leader’s ability to connect with and inspire their team.
+21.	I build strong relationships with my team members. (Trust is foundational to leadership influence.)
+22.	I actively listen to my team’s concerns and feedback. (Covey, 1989, stresses that “seek first to understand” is a crucial habit.)
+23.	My team feels comfortable approaching me with problems. (Approachability fosters an open culture.)
+24.	I show appreciation for my team’s efforts and contributions. (Recognition increases engagement.)
+25.	I am approachable and open to different perspectives. (Inclusive leadership strengthens decision-making.)
+26.	I foster an environment of mutual trust and respect. (Psychological safety improves team performance.)
+27.	I mentor and coach my team members for professional growth. (Maxwell notes that great leaders develop other leaders.)
+28.	I make an effort to understand the personal motivations of my team. (Understanding individual drivers enhances engagement.)
+29.	I resolve conflicts fairly and constructively. (Conflict resolution maintains team cohesion.)
+30.	I support work-life balance and employee well-being. (Healthy teams sustain long-term success.)
+________________________________________
+Section 3: Production Leadership (Results-Oriented Leadership)
+Assessing effectiveness in achieving results, driving performance, and leading by example
+Maxwell’s third level of leadership is where leaders are judged by what they achieve (Maxwell, 2011). At this stage, leaders must produce results, inspire performance, and lead by example.
+41.	I set clear and measurable goals for my team. (Effective leadership requires a results-oriented vision.)
+42.	My team consistently meets or exceeds performance expectations. (High-performing teams reflect strong leadership.)
+43.	I lead by example through my own productivity and work ethic. (Actions speak louder than words.)
+44.	I hold my team accountable for results. (Accountability drives performance.)
+45.	I recognize and reward high performance. (Recognition reinforces positive behavior.)
+46.	I effectively delegate tasks to optimize team performance. (Delegation maximizes efficiency.)
+47.	I make data-driven decisions to improve performance. (Informed decisions reduce risk.)
+48.	I encourage continuous improvement and innovation. (Growth mindset fosters adaptability.)
+49.	I address underperformance quickly and effectively. (Timely interventions maintain high standards.)
+50.	My team understands how their work contributes to organizational success. (Purpose drives motivation.)
+51.	I provide constructive feedback to help my team grow. (Feedback is essential for improvement.)
+52.	I adapt leadership strategies based on team needs. (Situational awareness enhances leadership effectiveness.)
+53.	I create an environment that motivates people to give their best effort. (Leaders inspire performance.)
+54.	I promote teamwork and collaboration to achieve goals. (Collective effort drives results.)
+55.	I manage time and priorities efficiently. (Time management optimizes productivity.)
+56.	I effectively balance short-term goals with long-term vision. (Strategic thinking ensures sustainability.)
+57.	I encourage my team to take initiative. (Empowered teams are more effective.)
+58.	I take decisive action when necessary. (Decisiveness prevents stagnation.)
+59.	I demonstrate resilience in challenging situations. (Leaders must remain steady in adversity.)
+60.	I continuously seek personal development and leadership growth. (Great leaders are lifelong learners.)
+•	
+•	Each question is rated on a 1-5 scale
+•	The leader and the manager complete separate assessments
+3. Scoring & Gap Analysis
+•	Calculate:
+o	The leader and their supervisor independently rate leadership competencies on a 1-5 scale:
+1 - Strongly Disagree
+2 - Disagree
+3 - Neutral
+4 - Agree
+5 - Strongly Agree
+•	
+o	Self-Score (Leader’s responses average)
+o	Manager Score (Manager’s responses average)
+o	Final Leadership Score = (Self-Score + Manager Score) ÷ 2
+•	Gap Analysis Calculation:
+o	Identify questions with a 2+ point gap between leader & manager
+o	Highlight leadership category (Positional, Permission, Production) with most gaps
+o	Display biggest improvement areas
+4. Results Dashboard & Visualization
+•	Display scores using Chart.js (Radar Chart for category performance)
+•	Show gap analysis table (highlighting questions with gaps)
+•	Provide AI-generated improvement suggestions
+5. PDF Report & Export
+•	Generate a downloadable PDF report summarizing:
+o	Leader vs. Manager scores
+o	Biggest gaps
+o	Recommended action plan
+6. Tech Stack
+•	Frontend: React.js + Tailwind CSS
+•	Backend: Firebase (Firestore for storing responses)
+•	Charts: Chart.js for visualization
+•	PDF Export: jsPDF or react-pdf
+User Flow:
+1.	Login (Administrator, Leader or Manager)
+2.	Complete Assessment (Each user rates questions)
+3.	View Results Dashboard
+4.	Download Report & Action Plan
+Generate full React.js frontend components, Firebase authentication logic, Firestore database setup, and scoring functions. Ensure smooth UI with Tailwind CSS and include chart visualizations for better analysis."
+
