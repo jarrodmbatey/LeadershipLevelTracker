@@ -66,6 +66,25 @@ export function registerRoutes(app: Express): Server {
     });
   });
 
+  // New endpoint to get all users (admin only)
+  app.get("/api/users", async (req: Request, res: Response) => {
+    try {
+      // TODO: Replace with actual session check
+      const users = await storage.getAllUsers();
+
+      // Remove sensitive information
+      const sanitizedUsers = users.map(user => ({
+        ...user,
+        password: undefined
+      }));
+
+      return res.json(sanitizedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
