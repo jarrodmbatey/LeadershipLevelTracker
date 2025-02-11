@@ -7,7 +7,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role", { enum: ["admin", "leader", "manager"] }).notNull(),
-  name: text("name").notNull()
+  name: text("name").notNull(),
+  project: text("project").notNull()
 });
 
 export const assessments = pgTable("assessments", {
@@ -25,7 +26,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
   role: true,
-  name: true
+  name: true,
+  project: true
 });
 
 export const insertAssessmentSchema = createInsertSchema(assessments).pick({

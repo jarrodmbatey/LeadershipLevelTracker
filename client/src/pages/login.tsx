@@ -16,7 +16,8 @@ const loginSchema = z.object({
 
 const registerSchema = loginSchema.extend({
   name: z.string().min(2),
-  role: z.enum(["leader", "manager"])
+  project: z.string().min(1),
+  role: z.enum(["admin", "leader", "manager"])
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -50,7 +51,7 @@ export default function Login() {
 
   const onRegister = async (data: RegisterForm) => {
     try {
-      await register(data.email, data.password, data.name, data.role);
+      await register(data.email, data.password, data.name, data.role, data.project);
       setLocation("/dashboard");
     } catch (error) {
       toast({
@@ -114,12 +115,27 @@ export default function Login() {
                 </div>
                 <div>
                   <Input
+                    type="text"
+                    placeholder="Project Name"
+                    {...registerForm.register("project")}
+                  />
+                </div>
+                <div>
+                  <Input
                     type="password"
                     placeholder="Password"
                     {...registerForm.register("password")}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={registerForm.watch("role") === "admin" ? "default" : "outline"}
+                    onClick={() => registerForm.setValue("role", "admin")}
+                    className="w-full"
+                  >
+                    Admin
+                  </Button>
                   <Button
                     type="button"
                     variant={registerForm.watch("role") === "leader" ? "default" : "outline"}
