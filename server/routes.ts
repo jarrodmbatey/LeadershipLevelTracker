@@ -21,6 +21,9 @@ export function registerRoutes(app: Express): Server {
 
       return res.json({ user: { ...user, password: undefined } });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid email or password format" });
+      }
       return res.status(400).json({ message: "Invalid request" });
     }
   });
@@ -37,7 +40,15 @@ export function registerRoutes(app: Express): Server {
       const user = await storage.createUser(data);
       return res.json({ user: { ...user, password: undefined } });
     } catch (error) {
-      return res.status(400).json({ message: "Invalid request" });
+      if (error instanceof z.ZodError) {
+        const issues = error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          issues 
+        });
+      }
+      console.error('Registration error:', error);
+      return res.status(400).json({ message: "Registration failed" });
     }
   });
 
@@ -49,7 +60,8 @@ export function registerRoutes(app: Express): Server {
         id: 1,
         email: "test@example.com",
         name: "Test User",
-        role: "leader"
+        role: "leader",
+        project: "Demo Project"
       }
     });
   });

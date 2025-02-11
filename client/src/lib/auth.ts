@@ -5,13 +5,14 @@ interface User {
   email: string;
   name: string;
   role: 'admin' | 'leader' | 'manager';
+  project: string;
 }
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role: User['role']) => Promise<void>;
+  register: (email: string, password: string, name: string, role: User['role'], project: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -25,25 +26,26 @@ export const useAuth = create<AuthState>((set) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    
+
     if (!res.ok) {
       throw new Error('Invalid credentials');
     }
-    
+
     const { user } = await res.json();
     set({ user });
   },
-  register: async (email, password, name, role) => {
+  register: async (email, password, name, role, project) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name, role }),
+      body: JSON.stringify({ email, password, name, role, project }),
     });
-    
+
     if (!res.ok) {
-      throw new Error('Registration failed');
+      const data = await res.json();
+      throw new Error(data.message || 'Registration failed');
     }
-    
+
     const { user } = await res.json();
     set({ user });
   },
