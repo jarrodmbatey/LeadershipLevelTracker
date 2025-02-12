@@ -15,7 +15,7 @@ interface ScoreChartProps {
 export default function ScoreChart({ leaderScores, managerScores }: ScoreChartProps) {
   const data = [
     {
-      category: "Positional",
+      category: "Position",
       leader: leaderScores[0],
       manager: managerScores[0]
     },
@@ -28,28 +28,46 @@ export default function ScoreChart({ leaderScores, managerScores }: ScoreChartPr
       category: "Production",
       leader: leaderScores[2],
       manager: managerScores[2]
+    },
+    {
+      category: "People Development",
+      leader: leaderScores[3],
+      manager: managerScores[3]
+    },
+    {
+      category: "Pinnacle",
+      leader: leaderScores[4],
+      manager: managerScores[4]
     }
   ];
 
   return (
     <RadarChart
-      width={500}
-      height={400}
+      width={600}
+      height={500}
       data={data}
       className="mx-auto"
     >
       <PolarGrid />
-      <PolarAngleAxis dataKey="category" />
-      <PolarRadiusAxis angle={30} domain={[0, 5]} />
+      <PolarAngleAxis 
+        dataKey="category" 
+        tick={{ fontSize: 12 }}
+        tickLine={false}
+      />
+      <PolarRadiusAxis 
+        angle={90} 
+        domain={[0, 5]} 
+        tickCount={6}
+      />
       <Radar
-        name="Leader Score"
+        name="Self Assessment"
         dataKey="leader"
         stroke="#2563eb"
         fill="#2563eb"
         fillOpacity={0.6}
       />
       <Radar
-        name="Manager Score"
+        name="Manager Assessment"
         dataKey="manager"
         stroke="#dc2626"
         fill="#dc2626"
