@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2 } from "lucide-react";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +60,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [managers, setManagers] = useState<Manager[]>([]);
   const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
+  const [showCompletedNotification, setShowCompletedNotification] = useState(false);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
     managerScores: number[];
@@ -67,6 +70,27 @@ export default function Dashboard() {
     managerScores: [0, 0, 0],
     gaps: []
   });
+
+  // Check for completed assessments on login
+  useEffect(() => {
+    const checkCompletedAssessments = async () => {
+      if (!user || user.role !== 'leader') return;
+
+      try {
+        const response = await fetch(`/api/assessments/${user.id}`);
+        if (!response.ok) throw new Error('Failed to fetch assessments');
+        const assessments: Assessment[] = await response.json();
+
+        // Check if there are any manager scores (completed assessments)
+        const hasManagerScores = assessments.some(a => a.managerScore !== null);
+        setShowCompletedNotification(hasManagerScores);
+      } catch (error) {
+        console.error('Error checking completed assessments:', error);
+      }
+    };
+
+    checkCompletedAssessments();
+  }, [user]);
 
   // Fetch assessment requests when dialog opens
   useEffect(() => {
@@ -227,6 +251,17 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Show notification for completed assessment */}
+      {showCompletedNotification && (
+        <Alert>
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertTitle>Assessment Completed</AlertTitle>
+          <AlertDescription>
+            Your manager has completed their assessment. View your updated scores below.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Assessment Dialog */}
       <Dialog open={showRequests} onOpenChange={setShowRequests}>
