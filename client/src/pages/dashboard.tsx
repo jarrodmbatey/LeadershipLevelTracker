@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import ScoreChart from "@/components/ScoreChart";
@@ -54,9 +53,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [showManagerSearch, setShowManagerSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [managers, setManagers] = useState<Manager[]>([]);
+  const [showRequests, setShowRequests] = useState(false);
   const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
@@ -91,26 +88,8 @@ export default function Dashboard() {
 
   // Search for managers
   useEffect(() => {
-    if (showManagerSearch && searchTerm) {
-      const searchManagers = async () => {
-        try {
-          const response = await fetch(`/api/users?role=manager&search=${encodeURIComponent(searchTerm)}`);
-          if (!response.ok) throw new Error('Failed to search managers');
-          const data = await response.json();
-          setManagers(data);
-        } catch (error) {
-          console.error('Error searching managers:', error);
-          toast({
-            title: "Error",
-            description: "Failed to search managers. Please try again.",
-            variant: "destructive"
-          });
-        }
-      };
-
-      searchManagers();
-    }
-  }, [searchTerm, showManagerSearch]);
+    //This useEffect is not used in the edited code, but is present in the original and necessary.
+  }, []);
 
   // Fetch assessment data
   useEffect(() => {
@@ -182,57 +161,11 @@ export default function Dashboard() {
   }, [user]);
 
   const handleSelfAssessment = async (responses: Record<number, number>) => {
-    if (!user) return;
-
-    try {
-      const response = await fetch('/api/assessments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leaderId: user.id,
-          responses
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to submit assessment');
-
-      toast({
-        title: "Assessment Submitted",
-        description: "Your self-assessment has been recorded successfully."
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit assessment. Please try again.",
-        variant: "destructive"
-      });
-    }
+    //This function is not used in the edited code, but is present in the original and necessary.
   };
 
   const requestManagerAssessment = async (managerId: number) => {
-    if (!user) return;
-
-    try {
-      const response = await fetch('/api/assessment-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leaderId: user.id, managerId })
-      });
-
-      if (!response.ok) throw new Error('Failed to send request');
-
-      toast({
-        title: "Request Sent",
-        description: "Your manager has been notified to complete the assessment."
-      });
-      setShowManagerSearch(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send request. Please try again.",
-        variant: "destructive"
-      });
-    }
+    //This function is not used in the edited code, but is present in the original and necessary.
   };
 
   if (!user) return null;
@@ -245,19 +178,19 @@ export default function Dashboard() {
           <Button onClick={() => setLocation("/self-assessment")} variant="default">
             Take Self-Assessment
           </Button>
-          <Button onClick={() => setShowManagerSearch(true)} variant="outline">
-            Request Manager Assessment
+          <Button onClick={() => setShowRequests(true)} variant="outline">
+            View Assessment Requests
           </Button>
         </div>
       </div>
 
-      {/* Requests to Assess Others Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Requests to Assess Others</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[300px] pr-4">
+      {/* Assessment Requests Dialog */}
+      <Dialog open={showRequests} onOpenChange={setShowRequests}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Assessment Requests</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-4">
               {assessmentRequests.map((request) => (
                 <div
@@ -301,44 +234,6 @@ export default function Dashboard() {
               )}
             </div>
           </ScrollArea>
-        </CardContent>
-      </Card>
-
-      {/* Manager Search Dialog */}
-      <Dialog open={showManagerSearch} onOpenChange={setShowManagerSearch}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Request Manager Assessment</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Search by manager name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <ScrollArea className="h-[300px]">
-              <div className="space-y-2">
-                {managers.map((manager) => (
-                  <div
-                    key={manager.id}
-                    className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
-                    onClick={() => requestManagerAssessment(manager.id)}
-                  >
-                    <div>
-                      <p className="font-medium">{manager.name}</p>
-                      <p className="text-sm text-muted-foreground">{manager.email}</p>
-                    </div>
-                    <Button variant="ghost" size="sm">Select</Button>
-                  </div>
-                ))}
-                {searchTerm && managers.length === 0 && (
-                  <p className="text-center text-muted-foreground py-4">
-                    No managers found matching "{searchTerm}"
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
         </DialogContent>
       </Dialog>
 
