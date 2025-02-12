@@ -366,29 +366,29 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Key Statistics Row */}
-              <div className="grid grid-cols-3 gap-4 py-4 border-y">
-                <div>
-                  <p className="text-sm text-muted-foreground">Self Assessment</p>
+              <LeadershipLevelBar currentScore={assessmentData.scorePercentage} />
+
+              {/* Statistics Row */}
+              <div className="grid grid-cols-3 gap-8 py-4">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Self Assessment</p>
                   <p className="text-2xl font-bold">
                     {assessmentData.selfAssessmentScore.toFixed(1)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Manager Assessment</p>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Manager Assessment</p>
                   <p className="text-2xl font-bold">
                     {assessmentData.managerAssessmentScore.toFixed(1)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Final Score</p>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Final Score</p>
                   <p className="text-2xl font-bold">
                     {assessmentData.overallScore.toFixed(1)}
                   </p>
                 </div>
               </div>
-
-              <LeadershipLevelBar currentScore={assessmentData.scorePercentage} />
             </div>
           ) : (
             <p className="text-muted-foreground">Complete an assessment to see your leadership level</p>
@@ -557,32 +557,32 @@ export default function Dashboard() {
                 ))}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Leadership Categories Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeadershipCategoriesChart assessments={assessments} />
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Leadership Categories Performance</CardTitle>
+            <CardTitle>Gap Analysis</CardTitle>
           </CardHeader>
           <CardContent>
-            <LeadershipCategoriesChart assessments={assessments} />
+            {assessmentData.gaps.length > 0 ? (
+              <GapAnalysis gaps={assessmentData.gaps} />
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                No significant gaps found in the assessment.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Gap Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {assessmentData.gaps.length > 0 ? (
-            <GapAnalysis gaps={assessmentData.gaps} />
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              No significant gaps found in the assessment.
-            </p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
