@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -41,6 +40,13 @@ interface Assessment {
   completedAt: string;
 }
 
+interface AssessmentSession {
+  sessionDate: string;
+  leaderScores: number[];
+  managerScores: number[];
+  assessmentIds: number[];
+}
+
 export default function UserDetails({ params }: UserDetailsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -57,27 +63,28 @@ export default function UserDetails({ params }: UserDetailsProps) {
     enabled: !!userId,
   });
 
-  const deleteAssessment = async (assessmentId: number) => {
+  const deleteAssessmentSession = async (assessmentIds: number[]) => {
     try {
-      const response = await fetch(`/api/assessments/${assessmentId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete assessment');
-      }
+      // Delete all assessments in the session
+      await Promise.all(
+        assessmentIds.map(id =>
+          fetch(`/api/assessments/${id}`, {
+            method: 'DELETE',
+          })
+        )
+      );
 
       await queryClient.invalidateQueries([`/api/assessments/${userId}`]);
 
       toast({
-        title: "Assessment deleted",
-        description: "The assessment has been successfully deleted.",
+        title: "Assessment session deleted",
+        description: "The assessment session has been successfully deleted.",
       });
     } catch (error) {
-      console.error('Error deleting assessment:', error);
+      console.error('Error deleting assessment session:', error);
       toast({
         title: "Error",
-        description: "Failed to delete the assessment. Please try again.",
+        description: "Failed to delete the assessment session. Please try again.",
         variant: "destructive",
       });
     }
@@ -87,28 +94,39 @@ export default function UserDetails({ params }: UserDetailsProps) {
   if (isLoadingUser || isLoadingAssessments) return <div>Loading...</div>;
   if (!userDetails) return <div>User not found</div>;
 
-  // Group assessments by question ID
-  const groupedAssessments = assessments?.reduce((acc, assessment) => {
-    if (!acc[assessment.questionId]) {
-      acc[assessment.questionId] = {
-        questionId: assessment.questionId,
-        id: assessment.id,
-        leaderScore: assessment.leaderScore,
-        managerScore: assessment.managerScore,
-        completedAt: assessment.completedAt
-      };
-    } else {
-      if (assessment.leaderScore !== null) {
-        acc[assessment.questionId].leaderScore = assessment.leaderScore;
-      }
-      if (assessment.managerScore !== null) {
-        acc[assessment.questionId].managerScore = assessment.managerScore;
-      }
-    }
-    return acc;
-  }, {} as Record<number, Assessment>) || {};
+  // Group assessments by session (date)
+  const sessionMap = new Map<string, AssessmentSession>();
 
-  const assessmentsList = Object.values(groupedAssessments);
+  assessments?.forEach(assessment => {
+    const sessionDate = new Date(assessment.completedAt).toISOString().split('T')[0];
+
+    if (!sessionMap.has(sessionDate)) {
+      sessionMap.set(sessionDate, {
+        sessionDate,
+        leaderScores: [],
+        managerScores: [],
+        assessmentIds: []
+      });
+    }
+
+    const session = sessionMap.get(sessionDate)!;
+    session.assessmentIds.push(assessment.id);
+
+    if (assessment.leaderScore !== null) {
+      session.leaderScores.push(assessment.leaderScore);
+    }
+    if (assessment.managerScore !== null) {
+      session.managerScores.push(assessment.managerScore);
+    }
+  });
+
+  const assessmentSessions = Array.from(sessionMap.values())
+    .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime());
+
+  const calculateAverageScore = (scores: number[]) => {
+    if (scores.length === 0) return "Not submitted";
+    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
+  };
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -148,27 +166,29 @@ export default function UserDetails({ params }: UserDetailsProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Assessment Results</CardTitle>
+          <CardTitle>Assessment Sessions</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Question ID</TableHead>
-                <TableHead>Self Score</TableHead>
-                <TableHead>Manager Score</TableHead>
-                <TableHead>Last Updated</TableHead>
+                <TableHead>Session Date</TableHead>
+                <TableHead>Self Assessment Average</TableHead>
+                <TableHead>Manager Assessment Average</TableHead>
+                <TableHead>Questions Answered</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assessmentsList.map((assessment) => (
-                <TableRow key={assessment.questionId}>
-                  <TableCell>{assessment.questionId}</TableCell>
-                  <TableCell>{assessment.leaderScore ?? "Not submitted"}</TableCell>
-                  <TableCell>{assessment.managerScore ?? "Not submitted"}</TableCell>
+              {assessmentSessions.map((session) => (
+                <TableRow key={session.sessionDate}>
                   <TableCell>
-                    {new Date(assessment.completedAt).toLocaleDateString()}
+                    {new Date(session.sessionDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>{calculateAverageScore(session.leaderScores)}</TableCell>
+                  <TableCell>{calculateAverageScore(session.managerScores)}</TableCell>
+                  <TableCell>
+                    {session.leaderScores.length + session.managerScores.length} questions
                   </TableCell>
                   <TableCell>
                     <AlertDialog>
@@ -179,18 +199,18 @@ export default function UserDetails({ params }: UserDetailsProps) {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Assessment</AlertDialogTitle>
+                          <AlertDialogTitle>Delete Assessment Session</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete this entire assessment record? This will remove both the self-assessment and manager assessment scores for this question. This action cannot be undone.
+                            Are you sure you want to delete this entire assessment session from {new Date(session.sessionDate).toLocaleDateString()}? This will remove all self-assessment and manager assessment scores from this session. This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => deleteAssessment(assessment.id)}
+                            onClick={() => deleteAssessmentSession(session.assessmentIds)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
-                            Delete
+                            Delete Session
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -198,10 +218,10 @@ export default function UserDetails({ params }: UserDetailsProps) {
                   </TableCell>
                 </TableRow>
               ))}
-              {assessmentsList.length === 0 && (
+              {assessmentSessions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center">
-                    No assessments found
+                    No assessment sessions found
                   </TableCell>
                 </TableRow>
               )}
