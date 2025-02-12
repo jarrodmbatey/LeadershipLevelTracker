@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { User } from "@/lib/auth";
 
 interface UserDetailsProps {
   params: {
@@ -30,7 +31,7 @@ export default function UserDetails({ params }: UserDetailsProps) {
   const { user } = useAuth();
   const userId = parseInt(params.userId);
 
-  const { data: userDetails, isLoading: isLoadingUser } = useQuery({
+  const { data: userDetails, isLoading: isLoadingUser } = useQuery<User>({
     queryKey: [`/api/users/${userId}`],
     enabled: !!userId,
   });
