@@ -18,6 +18,7 @@ import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
 import { useLocation } from "wouter";
+import LeadershipCategoriesChart from "@/components/LeadershipCategoriesChart";
 
 interface Assessment {
   id: number;
@@ -66,10 +67,11 @@ export default function Dashboard() {
     managerScores: number[];
     gaps: Gap[];
   }>({
-    leaderScores: [0, 0, 0,0,0],
-    managerScores: [0, 0, 0,0,0],
+    leaderScores: [0, 0, 0, 0, 0],
+    managerScores: [0, 0, 0, 0, 0],
     gaps: []
   });
+  const [assessments, setAssessments] = useState<Assessment[]>([]); // Added state for assessments
 
   // Check for completed assessments on login
   useEffect(() => {
@@ -80,6 +82,7 @@ export default function Dashboard() {
         const response = await fetch(`/api/assessments/${user.id}`);
         if (!response.ok) throw new Error('Failed to fetch assessments');
         const assessments: Assessment[] = await response.json();
+        setAssessments(assessments); // Update assessments state
 
         // Check if there are any manager scores (completed assessments)
         const hasManagerScores = assessments.some(a => a.managerScore !== null);
@@ -150,6 +153,7 @@ export default function Dashboard() {
         const response = await fetch(`/api/assessments/${user.id}`);
         if (!response.ok) throw new Error('Failed to fetch assessments');
         const assessments: Assessment[] = await response.json();
+        setAssessments(assessments); // Update assessments state
 
         // Calculate scores and gaps
         const categoryScores = {
@@ -375,7 +379,7 @@ export default function Dashboard() {
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Overall Scores</CardTitle>
+            <CardTitle>Overall Level Scores</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[400px]">
@@ -418,6 +422,15 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Leadership Categories Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LeadershipCategoriesChart assessments={assessments} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
