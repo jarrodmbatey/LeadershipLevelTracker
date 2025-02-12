@@ -185,7 +185,6 @@ export default function Dashboard() {
     if (!user) return;
 
     try {
-      // setIsSubmitting(true); //Removed as not used in this version
       const response = await fetch('/api/assessments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -207,8 +206,6 @@ export default function Dashboard() {
         description: "Failed to submit assessment. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      // setIsSubmitting(false); //Removed as not used in this version
     }
   };
 
@@ -244,7 +241,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <Button onClick={() => setLocation("/self-assessment")} variant="default">
             Take Self-Assessment
           </Button>
@@ -309,9 +306,9 @@ export default function Dashboard() {
 
       {/* Manager Search Dialog */}
       <Dialog open={showManagerSearch} onOpenChange={setShowManagerSearch}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Search for Manager</DialogTitle>
+            <DialogTitle>Request Manager Assessment</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <Input
