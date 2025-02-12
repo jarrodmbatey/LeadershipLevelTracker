@@ -53,6 +53,20 @@ interface AssessmentRequest {
   };
 }
 
+// Add the categories mapping from LeadershipCategoriesChart
+const categories = {
+  "Character & Integrity": [1, 9, 49, 39, 6],
+  "Communication & Influence": [7, 4, 15, 11, 42],
+  "Vision & Strategic Thinking": [44, 45, 40, 41, 50],
+  "Accountability & Decision-Making": [3, 8, 29, 24, 5],
+  "Emotional Intelligence & Relationships": [12, 18, 13, 19, 17],
+  "Coaching & Development": [31, 32, 33, 37, 36],
+  "Motivation & Team Culture": [16, 14, 20, 46, 35],
+  "Execution & Results": [21, 23, 22, 25, 30],
+  "Innovation & Adaptability": [26, 27, 34, 38, 43],
+  "Reputation & Influence": [47, 48, 43, 42, 41]
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -71,9 +85,8 @@ export default function Dashboard() {
     managerScores: [0, 0, 0, 0, 0],
     gaps: []
   });
-  const [assessments, setAssessments] = useState<Assessment[]>([]); // Added state for assessments
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
 
-  // Check for completed assessments on login
   useEffect(() => {
     const checkCompletedAssessments = async () => {
       if (!user || user.role !== 'leader') return;
@@ -82,9 +95,8 @@ export default function Dashboard() {
         const response = await fetch(`/api/assessments/${user.id}`);
         if (!response.ok) throw new Error('Failed to fetch assessments');
         const assessments: Assessment[] = await response.json();
-        setAssessments(assessments); // Update assessments state
+        setAssessments(assessments);
 
-        // Check if there are any manager scores (completed assessments)
         const hasManagerScores = assessments.some(a => a.managerScore !== null);
         setShowCompletedNotification(hasManagerScores);
       } catch (error) {
@@ -95,13 +107,11 @@ export default function Dashboard() {
     checkCompletedAssessments();
   }, [user]);
 
-  // Fetch assessment requests when dialog opens
   useEffect(() => {
     const fetchRequests = async () => {
       if (!user || !showRequests) return;
 
       try {
-        // If user is a manager, fetch requests to assess others
         if (user.role === 'manager') {
           const response = await fetch(`/api/assessment-requests/manager?managerId=${user.id}`, {
             headers: { 'Content-Type': 'application/json' }
@@ -121,7 +131,6 @@ export default function Dashboard() {
       }
     };
 
-    // If user is a leader and searching for managers, fetch managers
     const searchManagers = async () => {
       if (!user || !showRequests || user.role !== 'leader' || !searchTerm) return;
 
@@ -144,7 +153,6 @@ export default function Dashboard() {
     searchManagers();
   }, [user, showRequests, searchTerm]);
 
-  // Fetch assessment data
   useEffect(() => {
     const fetchAssessments = async () => {
       if (!user) return;
@@ -153,48 +161,41 @@ export default function Dashboard() {
         const response = await fetch(`/api/assessments/${user.id}`);
         if (!response.ok) throw new Error('Failed to fetch assessments');
         const assessments: Assessment[] = await response.json();
-        setAssessments(assessments); // Update assessments state
+        setAssessments(assessments);
 
-        // Calculate scores and gaps
-        const categoryScores = {
-          position: { leader: [] as number[], manager: [] as number[] },
-          permission: { leader: [] as number[], manager: [] as number[] },
-          production: { leader: [] as number[], manager: [] as number[] },
-          people: { leader: [] as number[], manager: [] as number[] },
-          pinnacle: { leader: [] as number[], manager: [] as number[] }
-        };
+        const categoryScores = {};
+        Object.keys(categories).forEach(key => {
+          categoryScores[key] = { leader: [] as number[], manager: [] as number[] };
+        })
 
-        // Process each assessment
         assessments.forEach(assessment => {
           const question = questions.find(q => q.id === assessment.questionId);
           if (!question) return;
 
-          // Add scores to appropriate category if they exist
-          if (assessment.leaderScore) {
-            categoryScores[question.category].leader.push(assessment.leaderScore);
+          const category = Object.entries(categories).find(([cat, ids]) => ids.includes(assessment.questionId))?.[0];
+          if (category && assessment.leaderScore) {
+            categoryScores[category].leader.push(assessment.leaderScore);
           }
-          if (assessment.managerScore) {
-            categoryScores[question.category].manager.push(assessment.managerScore);
+          if (category && assessment.managerScore) {
+            categoryScores[category].manager.push(assessment.managerScore);
           }
         });
 
-        // Calculate average scores for each category
-        const categories = Object.keys(categoryScores) as Array<keyof typeof categoryScores>;
-        const leaderScores = categories.map(category => {
+        const leaderScores = Object.keys(categoryScores).map(category => {
           const scores = categoryScores[category].leader;
           return scores.length > 0
             ? scores.reduce((sum, score) => sum + score, 0) / scores.length
             : 0;
         });
 
-        const managerScores = categories.map(category => {
+        const managerScores = Object.keys(categoryScores).map(category => {
           const scores = categoryScores[category].manager;
           return scores.length > 0
             ? scores.reduce((sum, score) => sum + score, 0) / scores.length
             : 0;
         });
 
-        // Find significant gaps (difference >= 2)
+
         const significantGaps = assessments
           .filter(a => a.leaderScore !== null && a.managerScore !== null)
           .map(a => {
@@ -204,13 +205,14 @@ export default function Dashboard() {
             const gap = Math.abs(a.leaderScore - a.managerScore);
             if (gap < 2) return null;
 
-            return {
-              category: question.category,
+            const category = Object.entries(categories).find(([cat, ids]) => ids.includes(a.questionId))?.[0];
+            return category ? {
+              category: category,
               question: question.text,
               leaderScore: a.leaderScore,
               managerScore: a.managerScore,
               gap
-            };
+            } : null;
           })
           .filter((gap): gap is Gap => gap !== null);
 
@@ -257,12 +259,6 @@ export default function Dashboard() {
       });
     }
   };
-
-  const categories = questions.reduce((acc, question) => {
-    acc[question.category] = acc[question.category] || [];
-    acc[question.category].push(question.id);
-    return acc;
-  }, {} as { [key: string]: number[] });
 
 
   if (!user) return null;
@@ -408,14 +404,17 @@ export default function Dashboard() {
                     questionIds.includes(a.questionId)
                   );
 
-                  const scores = categoryAssessments.reduce((acc, assessment) => {
-                    if (assessment.leaderScore) acc.push(assessment.leaderScore);
-                    if (assessment.managerScore) acc.push(assessment.managerScore);
-                    return acc;
-                  }, [] as number[]);
+                  const leaderScores = categoryAssessments
+                    .filter(a => a.leaderScore !== null)
+                    .map(a => a.leaderScore as number);
 
-                  const avgScore = scores.length > 0
-                    ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+                  const managerScores = categoryAssessments
+                    .filter(a => a.managerScore !== null)
+                    .map(a => a.managerScore as number);
+
+                  const allScores = [...leaderScores, ...managerScores];
+                  const avgScore = allScores.length > 0
+                    ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
                     : 0;
 
                   return { category, avgScore };
@@ -449,14 +448,17 @@ export default function Dashboard() {
                     questionIds.includes(a.questionId)
                   );
 
-                  const scores = categoryAssessments.reduce((acc, assessment) => {
-                    if (assessment.leaderScore) acc.push(assessment.leaderScore);
-                    if (assessment.managerScore) acc.push(assessment.managerScore);
-                    return acc;
-                  }, [] as number[]);
+                  const leaderScores = categoryAssessments
+                    .filter(a => a.leaderScore !== null)
+                    .map(a => a.leaderScore as number);
 
-                  const avgScore = scores.length > 0
-                    ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+                  const managerScores = categoryAssessments
+                    .filter(a => a.managerScore !== null)
+                    .map(a => a.managerScore as number);
+
+                  const allScores = [...leaderScores, ...managerScores];
+                  const avgScore = allScores.length > 0
+                    ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
                     : 0;
 
                   return { category, avgScore };
