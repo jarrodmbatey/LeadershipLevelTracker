@@ -226,12 +226,12 @@ export default function Dashboard() {
         // Calculate overall scores
         const selfAssessmentScore = assessments
           .filter(a => a.leaderScore !== null)
-          .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) / 
+          .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) /
           assessments.filter(a => a.leaderScore !== null).length || 0;
 
         const managerAssessmentScore = assessments
           .filter(a => a.managerScore !== null)
-          .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) / 
+          .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) /
           assessments.filter(a => a.managerScore !== null).length || 0;
 
         const overallScore = (selfAssessmentScore + managerAssessmentScore) / 2;
@@ -377,6 +377,35 @@ export default function Dashboard() {
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
+            <CardTitle>Key Statistics</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Self Assessment Score</p>
+              <p className="text-2xl font-bold">
+                {assessmentData.selfAssessmentScore.toFixed(1)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Manager Assessment Score</p>
+              <p className="text-2xl font-bold">
+                {assessmentData.managerAssessmentScore.toFixed(1)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Final Leadership Score</p>
+              <p className="text-2xl font-bold">
+                {assessmentData.overallScore.toFixed(1)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Number of Significant Gaps</p>
+              <p className="text-2xl font-bold">{assessmentData.gaps.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
             <CardTitle>Overall Level Scores</CardTitle>
           </CardHeader>
           <CardContent>
@@ -388,7 +417,6 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-
         <div className="grid gap-4">
           <Card>
             <CardHeader>
@@ -481,43 +509,13 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Key Statistics</CardTitle>
+            <CardTitle>Leadership Categories Performance</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Self Assessment Score</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.selfAssessmentScore.toFixed(1)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Manager Assessment Score</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.managerAssessmentScore.toFixed(1)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Final Leadership Score</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.overallScore.toFixed(1)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Number of Significant Gaps</p>
-              <p className="text-2xl font-bold">{assessmentData.gaps.length}</p>
-            </div>
+          <CardContent>
+            <LeadershipCategoriesChart assessments={assessments} />
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Leadership Categories Performance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LeadershipCategoriesChart assessments={assessments} />
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
