@@ -124,7 +124,9 @@ export default function Dashboard() {
         setAssessments(assessments);
 
         const hasManagerScores = assessments.some(a => a.managerScore !== null);
-        setShowCompletedNotification(hasManagerScores);
+        // Check local storage to see if we've already dismissed this notification
+        const isDismissed = localStorage.getItem('assessmentNotificationDismissed') === 'true';
+        setShowCompletedNotification(hasManagerScores && !isDismissed);
       } catch (error) {
         console.error('Error checking completed assessments:', error);
       }
@@ -321,6 +323,11 @@ export default function Dashboard() {
     ) || leadershipLevels[0]; // Default to first level if no match
   };
 
+  const dismissNotification = () => {
+    setShowCompletedNotification(false);
+    localStorage.setItem('assessmentNotificationDismissed', 'true');
+  };
+
   if (!user) return null;
 
   return (
@@ -338,12 +345,20 @@ export default function Dashboard() {
       </div>
 
       {showCompletedNotification && (
-        <Alert>
+        <Alert className="relative">
           <CheckCircle2 className="h-4 w-4" />
           <AlertTitle>Assessment Completed</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="pr-24">
             Your manager has completed their assessment. View your updated scores below.
           </AlertDescription>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={dismissNotification}
+            className="absolute right-4 top-4"
+          >
+            Got It!
+          </Button>
         </Alert>
       )}
 
