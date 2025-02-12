@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string()
+  password: z.string().min(1, "Password is required")
 });
 
 export function registerRoutes(app: Express): Server {
@@ -22,9 +22,13 @@ export function registerRoutes(app: Express): Server {
       return res.json({ user: { ...user, password: undefined } });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid email or password format" });
+        return res.status(400).json({ 
+          message: "Invalid email or password format",
+          issues: error.errors.map(err => err.message)
+        });
       }
-      return res.status(400).json({ message: "Invalid request" });
+      console.error('Login error:', error);
+      return res.status(500).json({ message: "Login failed" });
     }
   });
 
@@ -48,7 +52,7 @@ export function registerRoutes(app: Express): Server {
         });
       }
       console.error('Registration error:', error);
-      return res.status(400).json({ message: "Registration failed" });
+      return res.status(500).json({ message: "Registration failed" });
     }
   });
 
@@ -66,13 +70,9 @@ export function registerRoutes(app: Express): Server {
     });
   });
 
-  // New endpoint to get all users (admin only)
   app.get("/api/users", async (req: Request, res: Response) => {
     try {
-      // TODO: Replace with actual session check
       const users = await storage.getAllUsers();
-
-      // Remove sensitive information
       const sanitizedUsers = users.map(user => ({
         ...user,
         password: undefined
