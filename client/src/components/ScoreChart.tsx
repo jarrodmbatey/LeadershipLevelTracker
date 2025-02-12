@@ -48,7 +48,7 @@ export default function ScoreChart({ leaderScores, managerScores }: ScoreChartPr
       data={data}
       className="mx-auto"
     >
-      <PolarGrid />
+      <PolarGrid gridType="circle" />
       <PolarAngleAxis 
         dataKey="category" 
         tick={{ fontSize: 12 }}
@@ -65,6 +65,7 @@ export default function ScoreChart({ leaderScores, managerScores }: ScoreChartPr
         stroke="#2563eb"
         fill="#2563eb"
         fillOpacity={0.6}
+        strokeWidth={2}
       />
       <Radar
         name="Manager Assessment"
@@ -72,6 +73,7 @@ export default function ScoreChart({ leaderScores, managerScores }: ScoreChartPr
         stroke="#dc2626"
         fill="#dc2626"
         fillOpacity={0.6}
+        strokeWidth={2}
       />
       <Legend 
         align="right"
