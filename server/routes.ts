@@ -97,9 +97,15 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/assessment-requests/manager", async (req: Request, res: Response) => {
     try {
-      // For now using the mock authenticated user
-      const managerId = 1; // This would normally come from the authenticated session
-      const requests = await storage.getManagerAssessmentRequests(managerId);
+      // Get the authenticated user first
+      const response = await fetch('http://localhost:5000/api/auth/user');
+      const { user } = await response.json();
+
+      if (!user || user.role !== 'manager') {
+        return res.status(403).json({ message: "Unauthorized - Manager access required" });
+      }
+
+      const requests = await storage.getManagerAssessmentRequests(user.id);
       return res.json(requests);
     } catch (error) {
       console.error('Error fetching assessment requests:', error);
