@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, ArrowUpIcon, ArrowDownIcon } from "lucide-react";
+import { CheckCircle2, ArrowUpIcon, ArrowDownIcon, ArrowRightLeft } from "lucide-react";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
@@ -500,6 +500,65 @@ export default function Dashboard() {
                       <span className="text-orange-500 font-semibold">
                         {opportunity.avgScore.toFixed(2)}
                       </span>
+                    </div>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="h-5 w-5 text-blue-500" />
+                <CardTitle>Top 3 Gaps</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {Object.entries(categories)
+                .map(([category, questionIds]) => {
+                  const categoryAssessments = assessments.filter(a =>
+                    questionIds.includes(a.questionId)
+                  );
+
+                  const avgLeaderScore = categoryAssessments
+                    .filter(a => a.leaderScore !== null)
+                    .map(a => a.leaderScore as number)
+                    .reduce((sum, score) => sum + score, 0) /
+                    categoryAssessments.filter(a => a.leaderScore !== null).length || 0;
+
+                  const avgManagerScore = categoryAssessments
+                    .filter(a => a.managerScore !== null)
+                    .map(a => a.managerScore as number)
+                    .reduce((sum, score) => sum + score, 0) /
+                    categoryAssessments.filter(a => a.managerScore !== null).length || 0;
+
+                  const gap = Math.abs(avgLeaderScore - avgManagerScore);
+
+                  return {
+                    category,
+                    gap,
+                    leaderScore: avgLeaderScore,
+                    managerScore: avgManagerScore
+                  };
+                })
+                .filter(item => !isNaN(item.gap) && item.gap > 0)
+                .sort((a, b) => b.gap - a.gap)
+                .slice(0, 3)
+                .map((gapItem, index) => (
+                  <div key={gapItem.category} className="mb-4 last:mb-0">
+                    <div className="flex justify-between items-center">
+                      <p className="font-medium">{index + 1}. {gapItem.category}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#2563eb] text-sm">
+                          {gapItem.leaderScore.toFixed(1)}
+                        </span>
+                        <span className="text-blue-500 font-semibold">
+                          {gapItem.gap.toFixed(1)}
+                        </span>
+                        <span className="text-[#dc2626] text-sm">
+                          {gapItem.managerScore.toFixed(1)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
