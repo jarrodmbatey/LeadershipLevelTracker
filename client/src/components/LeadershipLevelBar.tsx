@@ -69,13 +69,9 @@ export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarP
 
       {/* Current position indicator */}
       <div 
-        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full shadow-lg border-2 border-white -ml-2"
+        className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-destructive rounded-full shadow-lg border-2 border-white -ml-3"
         style={{ left: dotPosition }}
-      >
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-2 py-1 rounded">
-          {currentScore.toFixed(1)}%
-        </div>
-      </div>
+      />
     </div>
   );
 }
