@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +66,15 @@ const categories = {
   "Innovation & Adaptability": [26, 27, 34, 38, 43],
   "Reputation & Influence": [47, 48, 43, 42, 41]
 };
+
+// Add leadership levels definition
+const leadershipLevels = [
+  { level: "Position (Rights)", range: [1, 39], description: "Authority and formal leadership role" },
+  { level: "Permission (Relationships)", range: [40, 59], description: "Building trust and influence" },
+  { level: "Production (Results)", range: [60, 79], description: "Driving outcomes and achievements" },
+  { level: "People Development (Reproduction)", range: [80, 94], description: "Developing and empowering others" },
+  { level: "Pinnacle (Legacy & Influence)", range: [95, 100], description: "Creating lasting impact" }
+];
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -260,6 +269,14 @@ export default function Dashboard() {
     }
   };
 
+  // Calculate leadership level
+  const calculateLeadershipLevel = (totalScore: number) => {
+    const maxPossibleScore = 5; // Max score per question
+    const overallPercentage = (totalScore / maxPossibleScore) * 100;
+    return leadershipLevels.find(
+      level => overallPercentage >= level.range[0] && overallPercentage <= level.range[1]
+    ) || leadershipLevels[0]; // Default to first level if no match
+  };
 
   if (!user) return null;
 
@@ -287,92 +304,53 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      <Dialog open={showRequests} onOpenChange={setShowRequests}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              {user.role === 'manager' ? 'Assessment Requests' : 'Request Manager Assessment'}
-            </DialogTitle>
-          </DialogHeader>
-
-          {user.role === 'manager' ? (
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-4">
-                {assessmentRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{request.leader?.name}</p>
-                        <Badge variant={request.status === "completed" ? "secondary" : "default"}>
-                          {request.status === "completed" ? "Completed" : "Pending"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">Project: {request.leader?.project}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Requested on: {new Date(request.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    {request.status === "pending" && (
-                      <Button
-                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
-                        variant="outline"
-                      >
-                        Start Assessment
-                      </Button>
-                    )}
-                    {request.status === "completed" && (
-                      <Button
-                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
-                        variant="secondary"
-                      >
-                        View Assessment
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                {assessmentRequests.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    No assessment requests found.
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
-          ) : (
+      {/* Add Leadership Level Card */}
+      <Card className="bg-primary/5">
+        <CardHeader>
+          <CardTitle>Current Leadership Level</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {assessments.length > 0 ? (
             <div className="space-y-4">
-              <Input
-                placeholder="Search by manager name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <ScrollArea className="h-[300px]">
-                <div className="space-y-2">
-                  {managers.map((manager) => (
-                    <div
-                      key={manager.id}
-                      className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
-                      onClick={() => requestManagerAssessment(manager.id)}
-                    >
+              {(() => {
+                const averageScore = assessments.reduce((acc, curr) => {
+                  const scores = [];
+                  if (curr.leaderScore !== null) scores.push(curr.leaderScore);
+                  if (curr.managerScore !== null) scores.push(curr.managerScore);
+                  return acc + (scores.reduce((sum, score) => sum + score, 0) / (scores.length || 1));
+                }, 0) / assessments.length;
+
+                const currentLevel = calculateLeadershipLevel(averageScore);
+
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium">{manager.name}</p>
-                        <p className="text-sm text-muted-foreground">{manager.email}</p>
+                        <h3 className="text-2xl font-bold">{currentLevel.level}</h3>
+                        <p className="text-muted-foreground">{currentLevel.description}</p>
                       </div>
-                      <Button variant="ghost" size="sm">Select</Button>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold">{((averageScore / 5) * 100).toFixed(1)}%</p>
+                        <p className="text-sm text-muted-foreground">Overall Score</p>
+                      </div>
                     </div>
-                  ))}
-                  {searchTerm && managers.length === 0 && (
-                    <p className="text-center text-muted-foreground py-4">
-                      No managers found matching "{searchTerm}"
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
+                    <div className="relative pt-1">
+                      <div className="overflow-hidden h-2 text-xs flex rounded bg-primary/20">
+                        <div
+                          style={{ width: `${(averageScore / 5) * 100}%` }}
+                          className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary"
+                        ></div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
+          ) : (
+            <p className="text-muted-foreground">Complete an assessment to see your leadership level</p>
           )}
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-8 md:grid-cols-2">
         <Card>

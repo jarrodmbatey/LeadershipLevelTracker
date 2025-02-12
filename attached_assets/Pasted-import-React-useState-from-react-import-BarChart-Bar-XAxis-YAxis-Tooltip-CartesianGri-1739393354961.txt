@@ -1,0 +1,81 @@
+import React, { useState } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
+
+const categories = {
+  "Character & Integrity": [1, 9, 49, 39, 6],
+  "Communication & Influence": [7, 4, 15, 11, 42],
+  "Vision & Strategic Thinking": [44, 45, 40, 41, 50],
+  "Accountability & Decision-Making": [3, 8, 29, 24, 5],
+  "Emotional Intelligence & Relationships": [12, 18, 13, 19, 17],
+  "Coaching & Development": [31, 32, 33, 37, 36],
+  "Motivation & Team Culture": [16, 14, 20, 46, 35],
+  "Execution & Results": [21, 23, 22, 25, 30],
+  "Innovation & Adaptability": [26, 27, 34, 38, 43],
+  "Reputation & Influence Beyond the Organization": [47, 48, 43, 42, 41]
+};
+
+const leadershipLevels = [
+  { level: "Position (Rights)", range: [1, 39] },
+  { level: "Permission (Relationships)", range: [40, 59] },
+  { level: "Production (Results)", range: [60, 79] },
+  { level: "People Development (Reproduction)", range: [80, 94] },
+  { level: "Pinnacle (Legacy & Influence)", range: [95, 100] }
+];
+
+const LeadershipChart: React.FC = () => {
+  const [scores, setScores] = useState<{ [key: number]: number }>({});
+
+  const handleInputChange = (question: number, value: number) => {
+    setScores((prev) => ({ ...prev, [question]: value }));
+  };
+
+  const totalScore = Object.values(scores).reduce((acc, score) => acc + score, 0);
+  const overallPercentage = (totalScore / 250) * 100;
+
+  const categoryScores = Object.keys(categories).map((category) => {
+    const questionNumbers = categories[category as keyof typeof categories];
+    const avgScore = questionNumbers.reduce((acc, q) => acc + (scores[q] || 1), 0) / questionNumbers.length;
+    return { category, score: avgScore };
+  });
+
+  const currentLeadershipLevel = leadershipLevels.find(
+    (level) => overallPercentage >= level.range[0] && overallPercentage <= level.range[1]
+  )?.level || "Not Determined";
+
+  return (
+    <div>
+      <h2>Leadership Assessment</h2>
+      <div>
+        {Array.from({ length: 50 }, (_, i) => i + 1).map((q) => (
+          <div key={q}>
+            <label>Question {q}: </label>
+            <input
+              type="number"
+              min="1"
+              max="5"
+              value={scores[q] || ""}
+              onChange={(e) => handleInputChange(q, Number(e.target.value))}
+            />
+          </div>
+        ))}
+      </div>
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart data={categoryScores} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="category" angle={-45} textAnchor="end" height={100} />
+          <YAxis domain={[1, 5]} />
+          <Tooltip />
+          <Bar dataKey="score" fill="#8884d8" />
+        </BarChart>
+      </ResponsiveContainer>
+      
+      <div style={{ marginTop: "20px", padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+        <h3>Leadership Level Assessment</h3>
+        <p><strong>Overall Score:</strong> {overallPercentage.toFixed(2)}%</p>
+        <p><strong>Current Leadership Level:</strong> {currentLeadershipLevel}</p>
+      </div>
+    </div>
+  );
+};
+
+export default LeadershipChart;
