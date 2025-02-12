@@ -18,7 +18,7 @@ interface User {
   name: string;
   role: 'admin' | 'leader' | 'manager';
   project: string;
-  createdAt: string;
+  createdAt: string | null;
 }
 
 export default function AdminPortal() {
@@ -68,7 +68,11 @@ export default function AdminPortal() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell className="capitalize">{user.role}</TableCell>
                     <TableCell>{user.project}</TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {user.createdAt 
+                        ? new Date(user.createdAt).toLocaleDateString()
+                        : 'Not available'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

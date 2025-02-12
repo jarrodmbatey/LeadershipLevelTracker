@@ -8,7 +8,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role", { enum: ["admin", "leader", "manager"] }).notNull(),
   name: text("name").notNull(),
-  project: text("project").notNull()
+  project: text("project").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 export const assessments = pgTable("assessments", {
