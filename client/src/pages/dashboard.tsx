@@ -158,39 +158,55 @@ export default function Dashboard() {
           production: { leader: [] as number[], manager: [] as number[] }
         };
 
+        // Process each assessment
         assessments.forEach(assessment => {
           const question = questions.find(q => q.id === assessment.questionId);
-          if (question && assessment.leaderScore && assessment.managerScore) {
+          if (!question) return;
+
+          // Add scores to appropriate category if they exist
+          if (assessment.leaderScore) {
             categoryScores[question.category].leader.push(assessment.leaderScore);
+          }
+          if (assessment.managerScore) {
             categoryScores[question.category].manager.push(assessment.managerScore);
           }
         });
 
         // Calculate average scores for each category
-        const leaderScores = Object.values(categoryScores).map(
-          category => category.leader.length > 0
-            ? category.leader.reduce((a, b) => a + b, 0) / category.leader.length
-            : 0
-        );
-        const managerScores = Object.values(categoryScores).map(
-          category => category.manager.length > 0
-            ? category.manager.reduce((a, b) => a + b, 0) / category.manager.length
-            : 0
-        );
+        const categories = Object.keys(categoryScores) as Array<keyof typeof categoryScores>;
+        const leaderScores = categories.map(category => {
+          const scores = categoryScores[category].leader;
+          return scores.length > 0 
+            ? scores.reduce((sum, score) => sum + score, 0) / scores.length 
+            : 0;
+        });
 
-        // Find significant gaps
+        const managerScores = categories.map(category => {
+          const scores = categoryScores[category].manager;
+          return scores.length > 0 
+            ? scores.reduce((sum, score) => sum + score, 0) / scores.length 
+            : 0;
+        });
+
+        // Find significant gaps (difference >= 2)
         const significantGaps = assessments
-          .filter(a => a.leaderScore && a.managerScore && Math.abs(a.leaderScore - a.managerScore) >= 2)
+          .filter(a => a.leaderScore !== null && a.managerScore !== null)
           .map(a => {
             const question = questions.find(q => q.id === a.questionId);
+            if (!question || !a.leaderScore || !a.managerScore) return null;
+
+            const gap = Math.abs(a.leaderScore - a.managerScore);
+            if (gap < 2) return null;
+
             return {
-              category: question?.category || "",
-              question: question?.text || "",
-              leaderScore: a.leaderScore!,
-              managerScore: a.managerScore!,
-              gap: Math.abs(a.leaderScore! - a.managerScore!)
+              category: question.category,
+              question: question.text,
+              leaderScore: a.leaderScore,
+              managerScore: a.managerScore,
+              gap
             };
-          });
+          })
+          .filter((gap): gap is Gap => gap !== null);
 
         setAssessmentData({
           leaderScores,
