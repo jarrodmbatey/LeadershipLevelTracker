@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
 import { useLocation } from "wouter";
 import LeadershipCategoriesChart from "@/components/LeadershipCategoriesChart";
+import LeadershipLevelBar from "@/components/LeadershipLevelBar";
 
 interface Assessment {
   id: number;
@@ -321,6 +322,7 @@ export default function Dashboard() {
                 }, 0) / assessments.length;
 
                 const currentLevel = calculateLeadershipLevel(averageScore);
+                const scorePercentage = ((averageScore / 5) * 100);
 
                 return (
                   <>
@@ -330,18 +332,12 @@ export default function Dashboard() {
                         <p className="text-muted-foreground">{currentLevel.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold">{((averageScore / 5) * 100).toFixed(1)}%</p>
+                        <p className="text-3xl font-bold">{scorePercentage.toFixed(1)}%</p>
                         <p className="text-sm text-muted-foreground">Overall Score</p>
                       </div>
                     </div>
-                    <div className="relative pt-1">
-                      <div className="overflow-hidden h-2 text-xs flex rounded bg-primary/20">
-                        <div
-                          style={{ width: `${(averageScore / 5) * 100}%` }}
-                          className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary"
-                        ></div>
-                      </div>
-                    </div>
+
+                    <LeadershipLevelBar currentScore={scorePercentage} />
                   </>
                 );
               })()}
