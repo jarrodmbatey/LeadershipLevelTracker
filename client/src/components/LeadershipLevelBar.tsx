@@ -7,7 +7,7 @@ interface LeadershipLevelBarProps {
 export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarProps) {
   // Define leadership levels with their ranges and colors
   const levels = [
-    { name: "Position", range: [1, 39], color: "bg-green-200" },
+    { name: "Position", range: [0, 39], color: "bg-green-200" },
     { name: "Permission", range: [40, 59], color: "bg-green-300" },
     { name: "Production", range: [60, 79], color: "bg-green-400" },
     { name: "People Development", range: [80, 94], color: "bg-green-500" },
@@ -20,14 +20,14 @@ export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarP
   return (
     <div className="relative pt-6 pb-8">
       {/* Level labels above */}
-      <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-muted-foreground">
+      <div className="absolute top-0 left-0 right-0 flex">
         {levels.map((level) => (
           <div 
             key={level.name}
-            className="text-center"
+            className="text-xs text-center text-muted-foreground"
             style={{ 
-              width: `${level.range[1] - level.range[0] + 1}%`,
-              marginLeft: level.range[0] === 1 ? '0' : `${level.range[0]}%`
+              width: `${level.range[1] - level.range[0]}%`,
+              marginLeft: level.range[0] === 0 ? '0' : undefined
             }}
           >
             {level.name}
@@ -45,21 +45,21 @@ export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarP
               "h-full transition-all duration-300"
             )}
             style={{
-              width: `${level.range[1] - level.range[0] + 1}%`
+              width: `${level.range[1] - level.range[0]}%`
             }}
           />
         ))}
       </div>
 
       {/* Percentage ranges below */}
-      <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-muted-foreground">
+      <div className="absolute bottom-0 left-0 right-0 flex">
         {levels.map((level) => (
           <div 
             key={level.name}
-            className="text-center"
+            className="text-xs text-center text-muted-foreground"
             style={{ 
-              width: `${level.range[1] - level.range[0] + 1}%`,
-              marginLeft: level.range[0] === 1 ? '0' : `${level.range[0]}%`
+              width: `${level.range[1] - level.range[0]}%`,
+              marginLeft: level.range[0] === 0 ? '0' : undefined
             }}
           >
             {level.range[0]}-{level.range[1]}%
