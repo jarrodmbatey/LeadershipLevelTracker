@@ -226,12 +226,12 @@ export default function Dashboard() {
         // Calculate overall scores
         const selfAssessmentScore = assessments
           .filter(a => a.leaderScore !== null)
-          .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) /
+          .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) / 
           assessments.filter(a => a.leaderScore !== null).length || 0;
 
         const managerAssessmentScore = assessments
           .filter(a => a.managerScore !== null)
-          .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) /
+          .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) / 
           assessments.filter(a => a.managerScore !== null).length || 0;
 
         const overallScore = (selfAssessmentScore + managerAssessmentScore) / 2;
@@ -347,7 +347,7 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      {/* Leadership Level Card with added assessment scores */}
+      {/* Add Leadership Level Card */}
       <Card className="bg-primary/5">
         <CardHeader>
           <CardTitle>Current Leadership Level</CardTitle>
@@ -355,24 +355,14 @@ export default function Dashboard() {
         <CardContent>
           {assessments.length > 0 ? (
             <div className="space-y-4">
-              <div className="flex items-start justify-between">
+              <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-2xl font-bold">{assessmentData.currentLevel.level}</h3>
                   <p className="text-muted-foreground">{assessmentData.currentLevel.description}</p>
                 </div>
-                <div className="text-right space-y-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Self Assessment</p>
-                    <p className="text-xl font-bold">{assessmentData.selfAssessmentScore.toFixed(1)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Manager Assessment</p>
-                    <p className="text-xl font-bold">{assessmentData.managerAssessmentScore.toFixed(1)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Overall Score</p>
-                    <p className="text-3xl font-bold">{assessmentData.scorePercentage.toFixed(1)}%</p>
-                  </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold">{assessmentData.scorePercentage.toFixed(1)}%</p>
+                  <p className="text-sm text-muted-foreground">Overall Score</p>
                 </div>
               </div>
 
@@ -381,31 +371,6 @@ export default function Dashboard() {
           ) : (
             <p className="text-muted-foreground">Complete an assessment to see your leadership level</p>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Key Statistics Card with horizontal layout */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Key Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-sm text-muted-foreground">Final Leadership Score</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.overallScore.toFixed(1)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Average Gap Size</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.gaps.length > 0
-                  ? (assessmentData.gaps.reduce((acc, gap) => acc + gap.gap, 0) / assessmentData.gaps.length).toFixed(1)
-                  : "0.0"}
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
