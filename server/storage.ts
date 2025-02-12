@@ -85,7 +85,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(assessmentRequests)
       .where(eq(assessmentRequests.managerId, managerId))
-      .innerJoin(users, eq(assessmentRequests.leaderId, users.id));
+      .leftJoin(users, eq(assessmentRequests.leaderId, users.id));
 
     return results.map(r => ({
       id: r.id,
