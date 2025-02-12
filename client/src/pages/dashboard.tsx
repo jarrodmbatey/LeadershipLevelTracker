@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
-import AssessmentForm from "@/components/AssessmentForm";
 import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
 import { useLocation } from "wouter";
@@ -60,7 +58,6 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [managers, setManagers] = useState<Manager[]>([]);
   const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
     managerScores: number[];
@@ -188,7 +185,7 @@ export default function Dashboard() {
     if (!user) return;
 
     try {
-      setIsSubmitting(true);
+      // setIsSubmitting(true); //Removed as not used in this version
       const response = await fetch('/api/assessments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,7 +208,7 @@ export default function Dashboard() {
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      // setIsSubmitting(false); //Removed as not used in this version
     }
   };
 
@@ -247,53 +244,15 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
-        <Button onClick={() => setShowManagerSearch(true)} variant="outline">
-          Request Manager Assessment
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={() => setLocation("/self-assessment")} variant="default">
+            Take Self-Assessment
+          </Button>
+          <Button onClick={() => setShowManagerSearch(true)} variant="outline">
+            Request Manager Assessment
+          </Button>
+        </div>
       </div>
-
-      {/* Self Assessment Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Leadership Self-Assessment</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="instructions">
-            <TabsList>
-              <TabsTrigger value="instructions">Instructions</TabsTrigger>
-              <TabsTrigger value="assessment">Assessment Form</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="instructions" className="space-y-4">
-              <div className="prose max-w-none">
-                <h3>Assessment Instructions</h3>
-                <ul>
-                  <li>Rate each statement on a scale of 1-5</li>
-                  <li>1 = Strongly Disagree, 5 = Strongly Agree</li>
-                  <li>Be honest and objective in your responses</li>
-                  <li>Consider specific examples when rating each statement</li>
-                  <li>Complete all questions in one session</li>
-                </ul>
-
-                <h3>Categories</h3>
-                <ul>
-                  <li><strong>Positional Leadership:</strong> Authority and responsibility in your role</li>
-                  <li><strong>Permission Leadership:</strong> Trust and relationships with team members</li>
-                  <li><strong>Production Leadership:</strong> Results and accountability</li>
-                </ul>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="assessment">
-              <AssessmentForm
-                onSubmit={handleSelfAssessment}
-                role={user.role}
-                isSubmitting={isSubmitting}
-              />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
 
       {/* Requests to Assess Others Section */}
       <Card>
@@ -394,7 +353,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-[400px]">
-              <ScoreChart 
+              <ScoreChart
                 leaderScores={assessmentData.leaderScores}
                 managerScores={assessmentData.managerScores}
               />
