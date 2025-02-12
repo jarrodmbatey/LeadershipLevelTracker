@@ -25,11 +25,11 @@ interface LeadershipCategoriesChartProps {
 export default function LeadershipCategoriesChart({ assessments }: LeadershipCategoriesChartProps) {
   const categoryScores = Object.entries(categories).map(([category, questionIds]) => {
     const categoryAssessments = assessments.filter(a => questionIds.includes(a.questionId));
-    
+
     const leaderScores = categoryAssessments
       .filter(a => a.leaderScore !== null)
       .map(a => a.leaderScore as number);
-    
+
     const managerScores = categoryAssessments
       .filter(a => a.managerScore !== null)
       .map(a => a.managerScore as number);
@@ -70,13 +70,13 @@ export default function LeadershipCategoriesChart({ assessments }: LeadershipCat
           name="Self Assessment" 
           dataKey="leaderScore" 
           fill="#2563eb" 
-          opacity={0.8}
+          opacity={0.6}
         />
         <Bar 
           name="Manager Assessment" 
           dataKey="managerScore" 
           fill="#dc2626" 
-          opacity={0.8}
+          opacity={0.6}
         />
       </BarChart>
     </ResponsiveContainer>
