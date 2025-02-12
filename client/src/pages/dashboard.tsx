@@ -354,7 +354,7 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {assessments.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-2xl font-bold">{assessmentData.currentLevel.level}</h3>
@@ -363,6 +363,28 @@ export default function Dashboard() {
                 <div className="text-right">
                   <p className="text-3xl font-bold">{assessmentData.scorePercentage.toFixed(1)}%</p>
                   <p className="text-sm text-muted-foreground">Overall Score</p>
+                </div>
+              </div>
+
+              {/* Key Statistics Row */}
+              <div className="grid grid-cols-3 gap-4 py-4 border-y">
+                <div>
+                  <p className="text-sm text-muted-foreground">Self Assessment</p>
+                  <p className="text-2xl font-bold">
+                    {assessmentData.selfAssessmentScore.toFixed(1)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Manager Assessment</p>
+                  <p className="text-2xl font-bold">
+                    {assessmentData.managerAssessmentScore.toFixed(1)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Final Score</p>
+                  <p className="text-2xl font-bold">
+                    {assessmentData.overallScore.toFixed(1)}
+                  </p>
                 </div>
               </div>
 
@@ -375,35 +397,6 @@ export default function Dashboard() {
       </Card>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Key Statistics</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Self Assessment Score</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.selfAssessmentScore.toFixed(1)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Manager Assessment Score</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.managerAssessmentScore.toFixed(1)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Final Leadership Score</p>
-              <p className="text-2xl font-bold">
-                {assessmentData.overallScore.toFixed(1)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Number of Significant Gaps</p>
-              <p className="text-2xl font-bold">{assessmentData.gaps.length}</p>
-            </div>
-          </CardContent>
-        </Card>
         <Card>
           <CardHeader>
             <CardTitle>Overall Level Scores</CardTitle>
