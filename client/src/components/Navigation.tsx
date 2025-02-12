@@ -1,5 +1,6 @@
 import { useAuth } from "../lib/auth";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 export default function Navigation() {
   const { user, logout } = useAuth();
@@ -16,6 +17,9 @@ export default function Navigation() {
                 Admin Portal
               </Link>
             )}
+            <Link href="/dashboard" className="text-gray-900 hover:text-gray-700">
+              Dashboard
+            </Link>
           </div>
           <Button
             variant="ghost"
