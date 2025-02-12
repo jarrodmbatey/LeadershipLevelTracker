@@ -9,18 +9,7 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["admin", "leader", "manager"] }).notNull(),
   name: text("name").notNull(),
   project: text("project").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
-
-export const assessments = pgTable("assessments", {
-  id: serial("id").primaryKey(),
-  leaderId: integer("leader_id").notNull(),
-  managerId: integer("manager_id").notNull(),
-  category: text("category", { enum: ["positional", "permission", "production"] }).notNull(),
-  questionId: integer("question_id").notNull(),
-  leaderScore: integer("leader_score"),
-  managerScore: integer("manager_score"),
-  completedAt: timestamp("completed_at")
+  createdAt: timestamp("created_at").defaultNow()  
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -31,19 +20,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   project: true
 });
 
-export const insertAssessmentSchema = createInsertSchema(assessments).pick({
-  leaderId: true,
-  managerId: true,
-  category: true,
-  questionId: true,
-  leaderScore: true,
-  managerScore: true
-});
-
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-export type InsertAssessment = z.infer<typeof insertAssessmentSchema>;
-export type Assessment = typeof assessments.$inferSelect;
+
 
 // Sample questions for the assessment
 export const questions = [
