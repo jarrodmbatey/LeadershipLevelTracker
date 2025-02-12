@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import ScoreChart from "@/components/ScoreChart";
@@ -68,10 +68,25 @@ export default function Dashboard() {
   // Fetch assessment requests where user is the manager
   useEffect(() => {
     const fetchRequests = async () => {
+      if (!user) return;
+
       try {
-        const response = await fetch('/api/assessment-requests/manager');
+        const response = await fetch('/api/assessment-requests/manager', {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // Include cookies for authentication
+        });
+
+        if (response.status === 403) {
+          console.log('User is not authorized to view requests');
+          return;
+        }
+
         if (!response.ok) throw new Error('Failed to fetch requests');
+
         const data = await response.json();
+        console.log('Fetched requests:', data);
         setAssessmentRequests(data);
       } catch (error) {
         console.error('Error fetching requests:', error);
@@ -83,13 +98,10 @@ export default function Dashboard() {
       }
     };
 
-    fetchRequests();
-  }, [user]);
-
-  // Search for managers
-  useEffect(() => {
-    //This useEffect is not used in the edited code, but is present in the original and necessary.
-  }, []);
+    if (showRequests) {
+      fetchRequests();
+    }
+  }, [user, showRequests]);
 
   // Fetch assessment data
   useEffect(() => {
@@ -160,14 +172,6 @@ export default function Dashboard() {
     fetchAssessments();
   }, [user]);
 
-  const handleSelfAssessment = async (responses: Record<number, number>) => {
-    //This function is not used in the edited code, but is present in the original and necessary.
-  };
-
-  const requestManagerAssessment = async (managerId: number) => {
-    //This function is not used in the edited code, but is present in the original and necessary.
-  };
-
   if (!user) return null;
 
   return (
@@ -178,9 +182,11 @@ export default function Dashboard() {
           <Button onClick={() => setLocation("/self-assessment")} variant="default">
             Take Self-Assessment
           </Button>
-          <Button onClick={() => setShowRequests(true)} variant="outline">
-            View Assessment Requests
-          </Button>
+          {user.role === 'manager' && (
+            <Button onClick={() => setShowRequests(true)} variant="outline">
+              View Assessment Requests
+            </Button>
+          )}
         </div>
       </div>
 
