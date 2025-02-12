@@ -95,9 +95,11 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/assessment-requests", async (req: Request, res: Response) => {
+  app.get("/api/assessment-requests/manager", async (req: Request, res: Response) => {
     try {
-      const requests = await storage.getPendingAssessmentRequests();
+      // For now using the mock authenticated user
+      const managerId = 1; // This would normally come from the authenticated session
+      const requests = await storage.getManagerAssessmentRequests(managerId);
       return res.json(requests);
     } catch (error) {
       console.error('Error fetching assessment requests:', error);
