@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface User {
   id: number;
@@ -59,6 +60,7 @@ export default function AdminPortal() {
                   <TableHead>Role</TableHead>
                   <TableHead>Project</TableHead>
                   <TableHead>Registration Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -69,9 +71,17 @@ export default function AdminPortal() {
                     <TableCell className="capitalize">{user.role}</TableCell>
                     <TableCell>{user.project}</TableCell>
                     <TableCell>
-                      {user.createdAt 
+                      {user.createdAt
                         ? new Date(user.createdAt).toLocaleDateString()
                         : 'Not available'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        onClick={() => setLocation(`/user/${user.id}`)}
+                      >
+                        View Details
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

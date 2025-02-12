@@ -10,9 +10,10 @@ import Dashboard from "./pages/dashboard";
 import Assessment from "./pages/assessment";
 import SelfAssessment from "./pages/self-assessment";
 import Admin from "./pages/admin";
+import UserDetails from "./pages/user-details";
 import NotFound from "./pages/not-found";
 
-function PrivateRoute({ component: Component, ...rest }: { component: any }) {
+function PrivateRoute({ component: Component, params }: { component: any; params?: any }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -23,7 +24,7 @@ function PrivateRoute({ component: Component, ...rest }: { component: any }) {
     return <Login />;
   }
 
-  return <Component {...rest} />;
+  return <Component {...params} />;
 }
 
 function App() {
@@ -51,6 +52,9 @@ function App() {
             </Route>
             <Route path="/admin">
               {() => <PrivateRoute component={Admin} />}
+            </Route>
+            <Route path="/user/:userId">
+              {(params) => <PrivateRoute component={UserDetails} params={params} />}
             </Route>
             <Route component={NotFound} />
           </Switch>
