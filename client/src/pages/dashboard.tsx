@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
+import { useLocation } from "wouter";
 
 interface Assessment {
   id: number;
@@ -38,13 +40,27 @@ interface Manager {
   email: string;
 }
 
+interface AssessmentRequest {
+  id: number;
+  leaderId: number;
+  status: "pending" | "completed";
+  createdAt: string;
+  leader?: {
+    name: string;
+    email: string;
+    project: string;
+  };
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [viewAsLeader, setViewAsLeader] = useState(true);
   const [showManagerSearch, setShowManagerSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [managers, setManagers] = useState<Manager[]>([]);
+  const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
     managerScores: number[];
@@ -54,6 +70,29 @@ export default function Dashboard() {
     managerScores: [0, 0, 0],
     gaps: []
   });
+
+  // Fetch assessment requests for managers
+  useEffect(() => {
+    if (user?.role === "manager") {
+      const fetchRequests = async () => {
+        try {
+          const response = await fetch('/api/assessment-requests/manager');
+          if (!response.ok) throw new Error('Failed to fetch requests');
+          const data = await response.json();
+          setAssessmentRequests(data);
+        } catch (error) {
+          console.error('Error fetching requests:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load assessment requests.",
+            variant: "destructive"
+          });
+        }
+      };
+
+      fetchRequests();
+    }
+  }, [user]);
 
   // Search for managers
   useEffect(() => {
@@ -78,40 +117,14 @@ export default function Dashboard() {
     }
   }, [searchTerm, showManagerSearch]);
 
-  const requestManagerAssessment = async (managerId: number) => {
-    if (!user) return;
-
-    try {
-      const response = await fetch('/api/assessment-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leaderId: user.id, managerId })
-      });
-
-      if (!response.ok) throw new Error('Failed to send request');
-
-      toast({
-        title: "Request Sent",
-        description: "Your manager has been notified to complete the assessment."
-      });
-      setShowManagerSearch(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send request. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
+  // Fetch assessment data
   useEffect(() => {
     const fetchAssessments = async () => {
       if (!user) return;
 
       try {
-        const response = await fetch(`/api/assessments/${viewAsLeader ? user.id : user.id}`);
+        const response = await fetch(`/api/assessments/${user.id}`);
         if (!response.ok) throw new Error('Failed to fetch assessments');
-
         const assessments: Assessment[] = await response.json();
 
         // Calculate scores and gaps
@@ -141,7 +154,7 @@ export default function Dashboard() {
             : 0
         );
 
-        // Find significant gaps (2+ points difference)
+        // Find significant gaps
         const significantGaps = assessments
           .filter(a => a.leaderScore && a.managerScore && Math.abs(a.leaderScore - a.managerScore) >= 2)
           .map(a => {
@@ -171,7 +184,33 @@ export default function Dashboard() {
     };
 
     fetchAssessments();
-  }, [user, viewAsLeader]);
+  }, [user]);
+
+  const requestManagerAssessment = async (managerId: number) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/assessment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaderId: user.id, managerId })
+      });
+
+      if (!response.ok) throw new Error('Failed to send request');
+
+      toast({
+        title: "Request Sent",
+        description: "Your manager has been notified to complete the assessment."
+      });
+      setShowManagerSearch(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send request. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (!user) return null;
 
@@ -196,6 +235,61 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Manager Assessment Requests Section */}
+      {user.role === "manager" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Assessment Requests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-4">
+                {assessmentRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{request.leader?.name}</p>
+                        <Badge variant={request.status === "completed" ? "secondary" : "default"}>
+                          {request.status === "completed" ? "Completed" : "Pending"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Project: {request.leader?.project}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Requested on: {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {request.status === "pending" && (
+                      <Button
+                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
+                        variant="outline"
+                      >
+                        Start Assessment
+                      </Button>
+                    )}
+                    {request.status === "completed" && (
+                      <Button
+                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
+                        variant="secondary"
+                      >
+                        View Assessment
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {assessmentRequests.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No assessment requests found.
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Manager Search Dialog */}
       <Dialog open={showManagerSearch} onOpenChange={setShowManagerSearch}>
@@ -235,6 +329,7 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Assessment Data Section */}
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
