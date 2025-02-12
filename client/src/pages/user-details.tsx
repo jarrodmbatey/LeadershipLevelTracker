@@ -22,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge"; // Added import for Badge
 import { Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/lib/auth";
@@ -42,8 +43,9 @@ interface Assessment {
 
 interface AssessmentSession {
   sessionDate: string;
-  leaderScores: number[];
-  managerScores: number[];
+  sessionType: 'Self' | 'Manager';
+  averageScore: number;
+  questionsAnswered: number;
   assessmentIds: number[];
 }
 
@@ -65,7 +67,6 @@ export default function UserDetails({ params }: UserDetailsProps) {
 
   const deleteAssessmentSession = async (assessmentIds: number[]) => {
     try {
-      // Delete all assessments in the session
       await Promise.all(
         assessmentIds.map(id =>
           fetch(`/api/assessments/${id}`, {
@@ -74,7 +75,7 @@ export default function UserDetails({ params }: UserDetailsProps) {
         )
       );
 
-      await queryClient.invalidateQueries([`/api/assessments/${userId}`]);
+      queryClient.invalidateQueries({ queryKey: [`/api/assessments/${userId}`] });
 
       toast({
         title: "Assessment session deleted",
@@ -94,39 +95,64 @@ export default function UserDetails({ params }: UserDetailsProps) {
   if (isLoadingUser || isLoadingAssessments) return <div>Loading...</div>;
   if (!userDetails) return <div>User not found</div>;
 
-  // Group assessments by session (date)
-  const sessionMap = new Map<string, AssessmentSession>();
+  // Group assessments by session date and type (leader/manager)
+  const sessionMap = new Map<string, AssessmentSession[]>();
 
   assessments?.forEach(assessment => {
+    // Create a unique session identifier based on date and score type
     const sessionDate = new Date(assessment.completedAt).toISOString().split('T')[0];
+    const hasLeaderScore = assessment.leaderScore !== null;
+    const hasManagerScore = assessment.managerScore !== null;
 
-    if (!sessionMap.has(sessionDate)) {
-      sessionMap.set(sessionDate, {
-        sessionDate,
-        leaderScores: [],
-        managerScores: [],
-        assessmentIds: []
-      });
+    // Handle leader scores (self assessment)
+    if (hasLeaderScore) {
+      const sessionKey = `${sessionDate}-self`;
+      if (!sessionMap.has(sessionKey)) {
+        sessionMap.set(sessionKey, []);
+      }
+      const sessions = sessionMap.get(sessionKey)!;
+      if (!sessions.length || sessions[sessions.length - 1].questionsAnswered >= 50) {
+        sessions.push({
+          sessionDate,
+          sessionType: 'Self',
+          averageScore: 0,
+          questionsAnswered: 0,
+          assessmentIds: []
+        });
+      }
+      const currentSession = sessions[sessions.length - 1];
+      currentSession.assessmentIds.push(assessment.id);
+      currentSession.averageScore = ((currentSession.averageScore * currentSession.questionsAnswered) + assessment.leaderScore) / (currentSession.questionsAnswered + 1);
+      currentSession.questionsAnswered += 1;
     }
 
-    const session = sessionMap.get(sessionDate)!;
-    session.assessmentIds.push(assessment.id);
-
-    if (assessment.leaderScore !== null) {
-      session.leaderScores.push(assessment.leaderScore);
-    }
-    if (assessment.managerScore !== null) {
-      session.managerScores.push(assessment.managerScore);
+    // Handle manager scores
+    if (hasManagerScore) {
+      const sessionKey = `${sessionDate}-manager`;
+      if (!sessionMap.has(sessionKey)) {
+        sessionMap.set(sessionKey, []);
+      }
+      const sessions = sessionMap.get(sessionKey)!;
+      if (!sessions.length || sessions[sessions.length - 1].questionsAnswered >= 50) {
+        sessions.push({
+          sessionDate,
+          sessionType: 'Manager',
+          averageScore: 0,
+          questionsAnswered: 0,
+          assessmentIds: []
+        });
+      }
+      const currentSession = sessions[sessions.length - 1];
+      currentSession.assessmentIds.push(assessment.id);
+      currentSession.averageScore = ((currentSession.averageScore * currentSession.questionsAnswered) + assessment.managerScore) / (currentSession.questionsAnswered + 1);
+      currentSession.questionsAnswered += 1;
     }
   });
 
+  // Flatten and sort all sessions
   const assessmentSessions = Array.from(sessionMap.values())
+    .flat()
     .sort((a, b) => new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime());
-
-  const calculateAverageScore = (scores: number[]) => {
-    if (scores.length === 0) return "Not submitted";
-    return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
-  };
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -173,23 +199,25 @@ export default function UserDetails({ params }: UserDetailsProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Session Date</TableHead>
-                <TableHead>Self Assessment Average</TableHead>
-                <TableHead>Manager Assessment Average</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Average Score</TableHead>
                 <TableHead>Questions Answered</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assessmentSessions.map((session) => (
-                <TableRow key={session.sessionDate}>
+              {assessmentSessions.map((session, index) => (
+                <TableRow key={`${session.sessionDate}-${session.sessionType}-${index}`}>
                   <TableCell>
                     {new Date(session.sessionDate).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>{calculateAverageScore(session.leaderScores)}</TableCell>
-                  <TableCell>{calculateAverageScore(session.managerScores)}</TableCell>
                   <TableCell>
-                    {session.leaderScores.length + session.managerScores.length} questions
+                    <Badge variant={session.sessionType === 'Self' ? "default" : "secondary"}>
+                      {session.sessionType} Assessment
+                    </Badge>
                   </TableCell>
+                  <TableCell>{session.averageScore.toFixed(2)}</TableCell>
+                  <TableCell>{session.questionsAnswered} questions</TableCell>
                   <TableCell>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -201,7 +229,7 @@ export default function UserDetails({ params }: UserDetailsProps) {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Assessment Session</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete this entire assessment session from {new Date(session.sessionDate).toLocaleDateString()}? This will remove all self-assessment and manager assessment scores from this session. This action cannot be undone.
+                            Are you sure you want to delete this {session.sessionType.toLowerCase()} assessment session from {new Date(session.sessionDate).toLocaleDateString()}? This action will remove all {session.questionsAnswered} question responses from this session and cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
