@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +55,8 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [showRequests, setShowRequests] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [managers, setManagers] = useState<Manager[]>([]);
   const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
@@ -65,29 +68,23 @@ export default function Dashboard() {
     gaps: []
   });
 
-  // Fetch assessment requests where user is the manager
+  // Fetch assessment requests when dialog opens
   useEffect(() => {
     const fetchRequests = async () => {
-      if (!user) return;
+      if (!user || !showRequests) return;
 
       try {
-        const response = await fetch('/api/assessment-requests/manager', {
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include' // Include cookies for authentication
-        });
+        // If user is a manager, fetch requests to assess others
+        if (user.role === 'manager') {
+          const response = await fetch('/api/assessment-requests/manager', {
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+          });
 
-        if (response.status === 403) {
-          console.log('User is not authorized to view requests');
-          return;
+          if (!response.ok) throw new Error('Failed to fetch requests');
+          const data = await response.json();
+          setAssessmentRequests(data);
         }
-
-        if (!response.ok) throw new Error('Failed to fetch requests');
-
-        const data = await response.json();
-        console.log('Fetched requests:', data);
-        setAssessmentRequests(data);
       } catch (error) {
         console.error('Error fetching requests:', error);
         toast({
@@ -98,10 +95,28 @@ export default function Dashboard() {
       }
     };
 
-    if (showRequests) {
-      fetchRequests();
-    }
-  }, [user, showRequests]);
+    // If user is a leader and searching for managers, fetch managers
+    const searchManagers = async () => {
+      if (!user || !showRequests || user.role !== 'leader' || !searchTerm) return;
+
+      try {
+        const response = await fetch(`/api/users?role=manager&search=${encodeURIComponent(searchTerm)}`);
+        if (!response.ok) throw new Error('Failed to search managers');
+        const data = await response.json();
+        setManagers(data);
+      } catch (error) {
+        console.error('Error searching managers:', error);
+        toast({
+          title: "Error",
+          description: "Failed to search managers.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchRequests();
+    searchManagers();
+  }, [user, showRequests, searchTerm]);
 
   // Fetch assessment data
   useEffect(() => {
@@ -172,6 +187,32 @@ export default function Dashboard() {
     fetchAssessments();
   }, [user]);
 
+  const requestManagerAssessment = async (managerId: number) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch('/api/assessment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaderId: user.id, managerId })
+      });
+
+      if (!response.ok) throw new Error('Failed to send request');
+
+      toast({
+        title: "Request Sent",
+        description: "Your manager has been notified to complete the assessment."
+      });
+      setShowRequests(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send request. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -182,64 +223,99 @@ export default function Dashboard() {
           <Button onClick={() => setLocation("/self-assessment")} variant="default">
             Take Self-Assessment
           </Button>
-          {user.role === 'manager' && (
-            <Button onClick={() => setShowRequests(true)} variant="outline">
-              View Assessment Requests
-            </Button>
-          )}
+          <Button onClick={() => setShowRequests(true)} variant="outline">
+            {user.role === 'manager' ? 'View Assessment Requests' : 'Request Assessment'}
+          </Button>
         </div>
       </div>
 
-      {/* Assessment Requests Dialog */}
+      {/* Assessment Dialog */}
       <Dialog open={showRequests} onOpenChange={setShowRequests}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Assessment Requests</DialogTitle>
+            <DialogTitle>
+              {user.role === 'manager' ? 'Assessment Requests' : 'Request Manager Assessment'}
+            </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-4">
-              {assessmentRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{request.leader?.name}</p>
-                      <Badge variant={request.status === "completed" ? "secondary" : "default"}>
-                        {request.status === "completed" ? "Completed" : "Pending"}
-                      </Badge>
+
+          {user.role === 'manager' ? (
+            // Manager View - Show requests to assess others
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-4">
+                {assessmentRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{request.leader?.name}</p>
+                        <Badge variant={request.status === "completed" ? "secondary" : "default"}>
+                          {request.status === "completed" ? "Completed" : "Pending"}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Project: {request.leader?.project}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Requested on: {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">Project: {request.leader?.project}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Requested on: {new Date(request.createdAt).toLocaleDateString()}
-                    </p>
+                    {request.status === "pending" && (
+                      <Button
+                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
+                        variant="outline"
+                      >
+                        Start Assessment
+                      </Button>
+                    )}
+                    {request.status === "completed" && (
+                      <Button
+                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
+                        variant="secondary"
+                      >
+                        View Assessment
+                      </Button>
+                    )}
                   </div>
-                  {request.status === "pending" && (
-                    <Button
-                      onClick={() => setLocation(`/assessment/${request.leaderId}`)}
-                      variant="outline"
+                ))}
+                {assessmentRequests.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No assessment requests found.
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          ) : (
+            // Leader View - Search and request manager assessment
+            <div className="space-y-4">
+              <Input
+                placeholder="Search by manager name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <ScrollArea className="h-[300px]">
+                <div className="space-y-2">
+                  {managers.map((manager) => (
+                    <div
+                      key={manager.id}
+                      className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
+                      onClick={() => requestManagerAssessment(manager.id)}
                     >
-                      Start Assessment
-                    </Button>
-                  )}
-                  {request.status === "completed" && (
-                    <Button
-                      onClick={() => setLocation(`/assessment/${request.leaderId}`)}
-                      variant="secondary"
-                    >
-                      View Assessment
-                    </Button>
+                      <div>
+                        <p className="font-medium">{manager.name}</p>
+                        <p className="text-sm text-muted-foreground">{manager.email}</p>
+                      </div>
+                      <Button variant="ghost" size="sm">Select</Button>
+                    </div>
+                  ))}
+                  {searchTerm && managers.length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">
+                      No managers found matching "{searchTerm}"
+                    </p>
                   )}
                 </div>
-              ))}
-              {assessmentRequests.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  No assessment requests found.
-                </p>
-              )}
+              </ScrollArea>
             </div>
-          </ScrollArea>
+          )}
         </DialogContent>
       </Dialog>
 
