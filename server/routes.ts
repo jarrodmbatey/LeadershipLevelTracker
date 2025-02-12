@@ -173,6 +173,17 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.delete("/api/assessments/:assessmentId", async (req: Request, res: Response) => {
+    try {
+      const assessmentId = parseInt(req.params.assessmentId);
+      await storage.deleteAssessment(assessmentId);
+      return res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+      return res.status(500).json({ message: "Failed to delete assessment" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
