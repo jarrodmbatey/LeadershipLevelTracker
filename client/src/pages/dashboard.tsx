@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
 
 interface Assessment {
@@ -25,6 +28,8 @@ interface Gap {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [viewAsLeader, setViewAsLeader] = useState(true);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
     managerScores: number[];
@@ -35,13 +40,36 @@ export default function Dashboard() {
     gaps: []
   });
 
+  const requestManagerAssessment = async () => {
+    if (!user) return;
+
+    try {
+      await addDoc(collection(db, "assessment_requests"), {
+        leaderId: user.id,
+        status: "pending",
+        createdAt: new Date().toISOString()
+      });
+
+      toast({
+        title: "Request Sent",
+        description: "Your manager has been notified to complete the assessment."
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send request. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     const fetchAssessments = async () => {
       if (!user) return;
 
       const assessmentsRef = collection(db, "assessments");
       const q = query(assessmentsRef, 
-        user.role === "leader" 
+        viewAsLeader 
           ? where("leaderId", "==", user.id)
           : where("managerId", "==", user.id)
       );
@@ -101,7 +129,7 @@ export default function Dashboard() {
     };
 
     fetchAssessments();
-  }, [user]);
+  }, [user, viewAsLeader]);
 
   const generatePDF = () => {
     // TODO: Implement PDF generation using jsPDF
@@ -112,9 +140,25 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Leadership Assessment Dashboard</h1>
-        <Button onClick={generatePDF}>Download Report</Button>
+      <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
+        <div className="flex items-center space-x-4">
+          {user.role === "manager" && (
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={!viewAsLeader}
+                onCheckedChange={(checked) => setViewAsLeader(!checked)}
+              />
+              <Label>View as Manager</Label>
+            </div>
+          )}
+          {user.role === "leader" && (
+            <Button onClick={requestManagerAssessment} variant="outline">
+              Request Manager Assessment
+            </Button>
+          )}
+          <Button onClick={generatePDF}>Download Report</Button>
+        </div>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">

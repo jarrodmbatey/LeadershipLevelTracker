@@ -1,18 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, collection } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AssessmentForm from "@/components/AssessmentForm";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+
+interface AssessmentRequest {
+  id: string;
+  leaderId: string;
+  status: "pending" | "completed";
+  createdAt: string;
+}
 
 export default function Assessment() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
+  const [selectedLeaderId, setSelectedLeaderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.role === "manager") {
+      const fetchRequests = async () => {
+        const requestsRef = collection(db, "assessment_requests");
+        const q = query(
+          requestsRef,
+          where("status", "==", "pending")
+        );
+
+        const querySnapshot = await getDocs(q);
+        const requests: AssessmentRequest[] = [];
+        querySnapshot.forEach((doc) => {
+          requests.push({ id: doc.id, ...doc.data() } as AssessmentRequest);
+        });
+
+        setAssessmentRequests(requests);
+      };
+
+      fetchRequests();
+    }
+  }, [user]);
 
   const handleSubmit = async (responses: Record<number, number>) => {
     if (!user) return;
@@ -25,7 +57,7 @@ export default function Assessment() {
       for (const [questionId, score] of Object.entries(responses)) {
         const assessmentRef = doc(collection(db, "assessments"));
         const assessmentData = {
-          leaderId: user.role === "leader" ? user.id : "",
+          leaderId: user.role === "leader" ? user.id : selectedLeaderId,
           managerId: user.role === "manager" ? user.id : "",
           questionId: parseInt(questionId),
           leaderScore: user.role === "leader" ? score : null,
@@ -34,6 +66,12 @@ export default function Assessment() {
         };
 
         batch.push(setDoc(assessmentRef, assessmentData));
+      }
+
+      if (user.role === "manager" && selectedLeaderId) {
+        // Update request status to completed
+        const requestRef = doc(collection(db, "assessment_requests"), selectedLeaderId);
+        batch.push(setDoc(requestRef, { status: "completed" }, { merge: true }));
       }
 
       await Promise.all(batch);
@@ -60,6 +98,29 @@ export default function Assessment() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Leadership Assessment</h1>
+
+      {user.role === "manager" && assessmentRequests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Assessment Requests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {assessmentRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between">
+                  <p>Assessment request from Leader {request.leaderId}</p>
+                  <Button
+                    onClick={() => setSelectedLeaderId(request.leaderId)}
+                    variant="outline"
+                  >
+                    Start Assessment
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -96,6 +157,7 @@ export default function Assessment() {
               <AssessmentForm
                 onSubmit={handleSubmit}
                 role={user.role}
+                isAssessingLeader={selectedLeaderId !== null}
               />
             </TabsContent>
           </Tabs>

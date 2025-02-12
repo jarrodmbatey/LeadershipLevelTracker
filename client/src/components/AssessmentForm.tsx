@@ -7,9 +7,10 @@ import { questions } from "@shared/schema";
 interface AssessmentFormProps {
   onSubmit: (responses: Record<number, number>) => void;
   role: "admin" | "leader" | "manager";
+  isAssessingLeader?: boolean;
 }
 
-export default function AssessmentForm({ onSubmit, role }: AssessmentFormProps) {
+export default function AssessmentForm({ onSubmit, role, isAssessingLeader = false }: AssessmentFormProps) {
   const [responses, setResponses] = useState<Record<number, number>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -19,6 +20,10 @@ export default function AssessmentForm({ onSubmit, role }: AssessmentFormProps) 
 
   if (role === "admin") {
     return <p>Administrators cannot complete assessments</p>;
+  }
+
+  if (role === "manager" && !isAssessingLeader) {
+    return <p>Managers can only assess leaders. Please wait for assessment requests from leaders.</p>;
   }
 
   return (
