@@ -3,8 +3,7 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar,
-  Legend
+  Radar
 } from "recharts";
 
 interface ScoreChartProps {
@@ -73,7 +72,6 @@ export default function ScoreChart({ leaderScores, managerScores }: ScoreChartPr
         fill="#dc2626"
         fillOpacity={0.6}
       />
-      <Legend />
     </RadarChart>
   );
 }
