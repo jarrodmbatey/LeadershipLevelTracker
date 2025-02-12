@@ -52,17 +52,31 @@ export default function Assessment({ params }: AssessmentPageProps) {
     try {
       setIsSubmitting(true);
 
-      const response = await fetch('/api/assessments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leaderId,
-          managerId: user.id,
-          responses
-        })
+      // Create an array of assessment submissions, one for each question
+      const assessmentPromises = Object.entries(responses).map(([questionId, score]) => {
+        return fetch('/api/assessments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leaderId,
+            managerId: user.id,
+            questionId: parseInt(questionId),
+            managerScore: score
+          })
+        });
       });
 
-      if (!response.ok) throw new Error('Failed to submit assessment');
+      // Wait for all assessment submissions to complete
+      await Promise.all(assessmentPromises);
+
+      // Update the assessment request status to completed
+      const response = await fetch('/api/assessment-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' })
+      });
+
+      if (!response.ok) throw new Error('Failed to update assessment status');
 
       toast({
         title: "Assessment Submitted",
@@ -124,7 +138,6 @@ export default function Assessment({ params }: AssessmentPageProps) {
               <TabsContent value="assessment">
                 <AssessmentForm
                   onSubmit={handleSubmit}
-                  role={user.role}
                   isAssessingLeader={true}
                   isSubmitting={isSubmitting}
                 />

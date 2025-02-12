@@ -64,7 +64,14 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/assessments", async (req: Request, res: Response) => {
     try {
-      const data = insertAssessmentSchema.parse(req.body);
+      const data = insertAssessmentSchema.parse({
+        leaderId: req.body.leaderId,
+        managerId: req.body.managerId,
+        questionId: req.body.questionId,
+        leaderScore: req.body.leaderScore || null,
+        managerScore: req.body.managerScore || null
+      });
+
       const assessment = await storage.createAssessment(data);
       return res.json(assessment);
     } catch (error) {
