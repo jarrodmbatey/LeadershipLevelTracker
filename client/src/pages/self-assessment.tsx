@@ -18,16 +18,22 @@ export default function SelfAssessment() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/assessments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leaderId: user.id,
-          responses
-        })
+
+      // Create an array of assessment submissions, one for each question
+      const assessmentPromises = Object.entries(responses).map(([questionId, score]) => {
+        return fetch('/api/assessments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leaderId: user.id,
+            questionId: parseInt(questionId),
+            leaderScore: score
+          })
+        });
       });
 
-      if (!response.ok) throw new Error('Failed to submit assessment');
+      // Wait for all assessment submissions to complete
+      await Promise.all(assessmentPromises);
 
       toast({
         title: "Assessment Submitted",
