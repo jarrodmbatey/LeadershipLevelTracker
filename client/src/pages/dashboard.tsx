@@ -27,7 +27,7 @@ interface Assessment {
 }
 
 interface Gap {
-  category: string;
+  category: "positional" | "permission" | "production";
   question: string;
   leaderScore: number;
   managerScore: number;
@@ -176,15 +176,15 @@ export default function Dashboard() {
         const categories = Object.keys(categoryScores) as Array<keyof typeof categoryScores>;
         const leaderScores = categories.map(category => {
           const scores = categoryScores[category].leader;
-          return scores.length > 0 
-            ? scores.reduce((sum, score) => sum + score, 0) / scores.length 
+          return scores.length > 0
+            ? scores.reduce((sum, score) => sum + score, 0) / scores.length
             : 0;
         });
 
         const managerScores = categories.map(category => {
           const scores = categoryScores[category].manager;
-          return scores.length > 0 
-            ? scores.reduce((sum, score) => sum + score, 0) / scores.length 
+          return scores.length > 0
+            ? scores.reduce((sum, score) => sum + score, 0) / scores.length
             : 0;
         });
 
