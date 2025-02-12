@@ -10,6 +10,7 @@ export interface IStorage {
   searchUsers(role: string, searchTerm: string): Promise<User[]>;
   createAssessment(assessment: Omit<Assessment, "id" | "completedAt">): Promise<Assessment>;
   getAssessments(leaderId: number): Promise<Assessment[]>;
+  deleteAssessment(id: number): Promise<void>;
   createAssessmentRequest(leaderId: number, managerId: number): Promise<AssessmentRequest>;
   getManagerAssessmentRequests(managerId: number): Promise<(AssessmentRequest & { leader: User })[]>;
   updateAssessmentRequestStatus(id: number, status: "completed"): Promise<void>;
@@ -65,6 +66,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(assessments.leaderId, leaderId));
   }
 
+  async deleteAssessment(id: number): Promise<void> {
+    await db
+      .delete(assessments)
+      .where(eq(assessments.id, id));
+  }
+
   async createAssessmentRequest(leaderId: number, managerId: number): Promise<AssessmentRequest> {
     const [request] = await db
       .insert(assessmentRequests)
@@ -93,7 +100,7 @@ export class DatabaseStorage implements IStorage {
       managerId: r.managerId,
       status: r.status,
       createdAt: r.createdAt,
-      leader: r.leader
+      leader: r.leader!
     }));
   }
 
