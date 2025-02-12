@@ -25,6 +25,7 @@ export const assessments = pgTable("assessments", {
 export const assessmentRequests = pgTable("assessment_requests", {
   id: serial("id").primaryKey(),
   leaderId: integer("leader_id").notNull().references(() => users.id),
+  managerId: integer("manager_id").references(() => users.id), 
   status: text("status", { enum: ["pending", "completed"] }).notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow()
 });
@@ -47,6 +48,7 @@ export const insertAssessmentSchema = createInsertSchema(assessments).pick({
 
 export const insertAssessmentRequestSchema = createInsertSchema(assessmentRequests).pick({
   leaderId: true,
+  managerId: true,
   status: true
 });
 

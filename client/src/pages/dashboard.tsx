@@ -4,6 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
@@ -24,10 +32,19 @@ interface Gap {
   gap: number;
 }
 
+interface Manager {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [viewAsLeader, setViewAsLeader] = useState(true);
+  const [showManagerSearch, setShowManagerSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [managers, setManagers] = useState<Manager[]>([]);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
     managerScores: number[];
@@ -38,14 +55,37 @@ export default function Dashboard() {
     gaps: []
   });
 
-  const requestManagerAssessment = async () => {
+  // Search for managers
+  useEffect(() => {
+    if (showManagerSearch && searchTerm) {
+      const searchManagers = async () => {
+        try {
+          const response = await fetch(`/api/users?role=manager&search=${encodeURIComponent(searchTerm)}`);
+          if (!response.ok) throw new Error('Failed to search managers');
+          const data = await response.json();
+          setManagers(data);
+        } catch (error) {
+          console.error('Error searching managers:', error);
+          toast({
+            title: "Error",
+            description: "Failed to search managers. Please try again.",
+            variant: "destructive"
+          });
+        }
+      };
+
+      searchManagers();
+    }
+  }, [searchTerm, showManagerSearch]);
+
+  const requestManagerAssessment = async (managerId: number) => {
     if (!user) return;
 
     try {
       const response = await fetch('/api/assessment-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leaderId: user.id })
+        body: JSON.stringify({ leaderId: user.id, managerId })
       });
 
       if (!response.ok) throw new Error('Failed to send request');
@@ -54,6 +94,7 @@ export default function Dashboard() {
         title: "Request Sent",
         description: "Your manager has been notified to complete the assessment."
       });
+      setShowManagerSearch(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -149,12 +190,50 @@ export default function Dashboard() {
             </div>
           )}
           {user.role === "leader" && (
-            <Button onClick={requestManagerAssessment} variant="outline">
+            <Button onClick={() => setShowManagerSearch(true)} variant="outline">
               Request Manager Assessment
             </Button>
           )}
         </div>
       </div>
+
+      {/* Manager Search Dialog */}
+      <Dialog open={showManagerSearch} onOpenChange={setShowManagerSearch}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Search for Manager</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Search by manager name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-2">
+                {managers.map((manager) => (
+                  <div
+                    key={manager.id}
+                    className="flex items-center justify-between p-2 hover:bg-accent rounded-md cursor-pointer"
+                    onClick={() => requestManagerAssessment(manager.id)}
+                  >
+                    <div>
+                      <p className="font-medium">{manager.name}</p>
+                      <p className="text-sm text-muted-foreground">{manager.email}</p>
+                    </div>
+                    <Button variant="ghost" size="sm">Select</Button>
+                  </div>
+                ))}
+                {searchTerm && managers.length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">
+                    No managers found matching "{searchTerm}"
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-8 md:grid-cols-2">
         <Card>

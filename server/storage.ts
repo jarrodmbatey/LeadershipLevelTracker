@@ -1,15 +1,16 @@
 import { users, assessments, assessmentRequests, type User, type InsertUser, type Assessment, type AssessmentRequest } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ilike } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  searchUsers(role: string, searchTerm: string): Promise<User[]>;
   createAssessment(assessment: Omit<Assessment, "id" | "completedAt">): Promise<Assessment>;
   getAssessments(leaderId: number): Promise<Assessment[]>;
-  createAssessmentRequest(leaderId: number): Promise<AssessmentRequest>;
+  createAssessmentRequest(leaderId: number, managerId: number): Promise<AssessmentRequest>;
   getPendingAssessmentRequests(): Promise<AssessmentRequest[]>;
   updateAssessmentRequestStatus(id: number, status: "completed"): Promise<void>;
 }
@@ -37,6 +38,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
+  async searchUsers(role: string, searchTerm: string): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.role, role),
+          ilike(users.name, `%${searchTerm}%`)
+        )
+      );
+  }
+
   async createAssessment(assessment: Omit<Assessment, "id" | "completedAt">): Promise<Assessment> {
     const [result] = await db
       .insert(assessments)
@@ -52,10 +65,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(assessments.leaderId, leaderId));
   }
 
-  async createAssessmentRequest(leaderId: number): Promise<AssessmentRequest> {
+  async createAssessmentRequest(leaderId: number, managerId: number): Promise<AssessmentRequest> {
     const [request] = await db
       .insert(assessmentRequests)
-      .values({ leaderId })
+      .values({ leaderId, managerId })
       .returning();
     return request;
   }

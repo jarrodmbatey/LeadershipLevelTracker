@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertAssessmentSchema } from "@shared/schema";
 import { z } from "zod";
+import { ilike } from "drizzle-orm";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -10,7 +11,8 @@ const loginSchema = z.object({
 });
 
 const assessmentRequestSchema = z.object({
-  leaderId: z.number()
+  leaderId: z.number(),
+  managerId: z.number()
 });
 
 export function registerRoutes(app: Express): Server {
@@ -84,8 +86,8 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/assessment-requests", async (req: Request, res: Response) => {
     try {
-      const { leaderId } = assessmentRequestSchema.parse(req.body);
-      const request = await storage.createAssessmentRequest(leaderId);
+      const { leaderId, managerId } = assessmentRequestSchema.parse(req.body);
+      const request = await storage.createAssessmentRequest(leaderId, managerId);
       return res.json(request);
     } catch (error) {
       console.error('Error creating assessment request:', error);
@@ -103,6 +105,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get("/api/users", async (req: Request, res: Response) => {
+    try {
+      const { role, search } = req.query;
+      let users = await storage.searchUsers(role as string, search as string);
+
+      // Remove sensitive information
+      const sanitizedUsers = users.map(user => ({
+        ...user,
+        password: undefined
+      }));
+
+      return res.json(sanitizedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   app.get("/api/auth/user", async (req: Request, res: Response) => {
     // This would normally check session/token
     // For now, return a mock authenticated user
@@ -115,21 +135,6 @@ export function registerRoutes(app: Express): Server {
         project: "Demo Project"
       }
     });
-  });
-
-  app.get("/api/users", async (req: Request, res: Response) => {
-    try {
-      const users = await storage.getAllUsers();
-      const sanitizedUsers = users.map(user => ({
-        ...user,
-        password: undefined
-      }));
-
-      return res.json(sanitizedUsers);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      return res.status(500).json({ message: "Failed to fetch users" });
-    }
   });
 
   const httpServer = createServer(app);
