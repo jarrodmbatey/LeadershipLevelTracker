@@ -76,9 +76,8 @@ export default function Dashboard() {
       try {
         // If user is a manager, fetch requests to assess others
         if (user.role === 'manager') {
-          const response = await fetch('/api/assessment-requests/manager', {
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
+          const response = await fetch(`/api/assessment-requests/manager?managerId=${user.id}`, {
+            headers: { 'Content-Type': 'application/json' }
           });
 
           if (!response.ok) throw new Error('Failed to fetch requests');

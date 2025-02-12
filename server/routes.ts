@@ -97,15 +97,12 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/assessment-requests/manager", async (req: Request, res: Response) => {
     try {
-      // Get the authenticated user first
-      const response = await fetch('http://localhost:5000/api/auth/user');
-      const { user } = await response.json();
-
-      if (!user || user.role !== 'manager') {
-        return res.status(403).json({ message: "Unauthorized - Manager access required" });
+      const managerId = req.query.managerId;
+      if (!managerId) {
+        return res.status(400).json({ message: "Manager ID is required" });
       }
 
-      const requests = await storage.getManagerAssessmentRequests(user.id);
+      const requests = await storage.getManagerAssessmentRequests(Number(managerId));
       return res.json(requests);
     } catch (error) {
       console.error('Error fetching assessment requests:', error);
