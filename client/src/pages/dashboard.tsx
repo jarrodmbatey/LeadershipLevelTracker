@@ -347,7 +347,7 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      {/* Add Leadership Level Card */}
+      {/* Current Leadership Level Card */}
       <Card className="bg-primary/5">
         <CardHeader>
           <CardTitle>Current Leadership Level</CardTitle>
@@ -396,6 +396,160 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
+      {/* Top 3 Cards Row */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Strengths Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ArrowUpIcon className="h-5 w-5 text-green-500" />
+              <CardTitle>Top 3 Strengths</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {Object.entries(categories)
+              .map(([category, questionIds]) => {
+                const categoryAssessments = assessments.filter(a =>
+                  questionIds.includes(a.questionId)
+                );
+
+                const leaderScores = categoryAssessments
+                  .filter(a => a.leaderScore !== null)
+                  .map(a => a.leaderScore as number);
+
+                const managerScores = categoryAssessments
+                  .filter(a => a.managerScore !== null)
+                  .map(a => a.managerScore as number);
+
+                const allScores = [...leaderScores, ...managerScores];
+                const avgScore = allScores.length > 0
+                  ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
+                  : 0;
+
+                return { category, avgScore };
+              })
+              .sort((a, b) => b.avgScore - a.avgScore)
+              .slice(0, 3)
+              .map((strength, index) => (
+                <div key={strength.category} className="mb-4 last:mb-0">
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">{index + 1}. {strength.category}</p>
+                    <span className="text-green-500 font-semibold">
+                      {strength.avgScore.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+
+        {/* Opportunities Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ArrowDownIcon className="h-5 w-5 text-orange-500" />
+              <CardTitle>Top 3 Opportunities</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {Object.entries(categories)
+              .map(([category, questionIds]) => {
+                const categoryAssessments = assessments.filter(a =>
+                  questionIds.includes(a.questionId)
+                );
+
+                const leaderScores = categoryAssessments
+                  .filter(a => a.leaderScore !== null)
+                  .map(a => a.leaderScore as number);
+
+                const managerScores = categoryAssessments
+                  .filter(a => a.managerScore !== null)
+                  .map(a => a.managerScore as number);
+
+                const allScores = [...leaderScores, ...managerScores];
+                const avgScore = allScores.length > 0
+                  ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
+                  : 0;
+
+                return { category, avgScore };
+              })
+              .sort((a, b) => a.avgScore - b.avgScore)
+              .slice(0, 3)
+              .map((opportunity, index) => (
+                <div key={opportunity.category} className="mb-4 last:mb-0">
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">{index + 1}. {opportunity.category}</p>
+                    <span className="text-orange-500 font-semibold">
+                      {opportunity.avgScore.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+
+        {/* Gaps Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5 text-blue-500" />
+              <CardTitle>Top 3 Gaps</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {Object.entries(categories)
+              .map(([category, questionIds]) => {
+                const categoryAssessments = assessments.filter(a =>
+                  questionIds.includes(a.questionId)
+                );
+
+                const avgLeaderScore = categoryAssessments
+                  .filter(a => a.leaderScore !== null)
+                  .map(a => a.leaderScore as number)
+                  .reduce((sum, score) => sum + score, 0) /
+                  categoryAssessments.filter(a => a.leaderScore !== null).length || 0;
+
+                const avgManagerScore = categoryAssessments
+                  .filter(a => a.managerScore !== null)
+                  .map(a => a.managerScore as number)
+                  .reduce((sum, score) => sum + score, 0) /
+                  categoryAssessments.filter(a => a.managerScore !== null).length || 0;
+
+                const gap = Math.abs(avgLeaderScore - avgManagerScore);
+
+                return {
+                  category,
+                  gap,
+                  leaderScore: avgLeaderScore,
+                  managerScore: avgManagerScore
+                };
+              })
+              .filter(item => !isNaN(item.gap) && item.gap > 0)
+              .sort((a, b) => b.gap - a.gap)
+              .slice(0, 3)
+              .map((gapItem, index) => (
+                <div key={gapItem.category} className="mb-4 last:mb-0">
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium">{index + 1}. {gapItem.category}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#2563eb] text-sm">
+                        {gapItem.leaderScore.toFixed(1)}
+                      </span>
+                      <span className="text-blue-500 font-semibold">
+                        {gapItem.gap.toFixed(1)}
+                      </span>
+                      <span className="text-[#dc2626] text-sm">
+                        {gapItem.managerScore.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Grid */}
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -410,179 +564,33 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        <div className="grid gap-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <ArrowUpIcon className="h-5 w-5 text-green-500" />
-                <CardTitle>Top 3 Strengths</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {Object.entries(categories)
-                .map(([category, questionIds]) => {
-                  const categoryAssessments = assessments.filter(a =>
-                    questionIds.includes(a.questionId)
-                  );
-
-                  const leaderScores = categoryAssessments
-                    .filter(a => a.leaderScore !== null)
-                    .map(a => a.leaderScore as number);
-
-                  const managerScores = categoryAssessments
-                    .filter(a => a.managerScore !== null)
-                    .map(a => a.managerScore as number);
-
-                  const allScores = [...leaderScores, ...managerScores];
-                  const avgScore = allScores.length > 0
-                    ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
-                    : 0;
-
-                  return { category, avgScore };
-                })
-                .sort((a, b) => b.avgScore - a.avgScore)
-                .slice(0, 3)
-                .map((strength, index) => (
-                  <div key={strength.category} className="mb-4 last:mb-0">
-                    <div className="flex justify-between items-center">
-                      <p className="font-medium">{index + 1}. {strength.category}</p>
-                      <span className="text-green-500 font-semibold">
-                        {strength.avgScore.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <ArrowDownIcon className="h-5 w-5 text-orange-500" />
-                <CardTitle>Top 3 Opportunities</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {Object.entries(categories)
-                .map(([category, questionIds]) => {
-                  const categoryAssessments = assessments.filter(a =>
-                    questionIds.includes(a.questionId)
-                  );
-
-                  const leaderScores = categoryAssessments
-                    .filter(a => a.leaderScore !== null)
-                    .map(a => a.leaderScore as number);
-
-                  const managerScores = categoryAssessments
-                    .filter(a => a.managerScore !== null)
-                    .map(a => a.managerScore as number);
-
-                  const allScores = [...leaderScores, ...managerScores];
-                  const avgScore = allScores.length > 0
-                    ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
-                    : 0;
-
-                  return { category, avgScore };
-                })
-                .sort((a, b) => a.avgScore - b.avgScore)
-                .slice(0, 3)
-                .map((opportunity, index) => (
-                  <div key={opportunity.category} className="mb-4 last:mb-0">
-                    <div className="flex justify-between items-center">
-                      <p className="font-medium">{index + 1}. {opportunity.category}</p>
-                      <span className="text-orange-500 font-semibold">
-                        {opportunity.avgScore.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <ArrowRightLeft className="h-5 w-5 text-blue-500" />
-                <CardTitle>Top 3 Gaps</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {Object.entries(categories)
-                .map(([category, questionIds]) => {
-                  const categoryAssessments = assessments.filter(a =>
-                    questionIds.includes(a.questionId)
-                  );
-
-                  const avgLeaderScore = categoryAssessments
-                    .filter(a => a.leaderScore !== null)
-                    .map(a => a.leaderScore as number)
-                    .reduce((sum, score) => sum + score, 0) /
-                    categoryAssessments.filter(a => a.leaderScore !== null).length || 0;
-
-                  const avgManagerScore = categoryAssessments
-                    .filter(a => a.managerScore !== null)
-                    .map(a => a.managerScore as number)
-                    .reduce((sum, score) => sum + score, 0) /
-                    categoryAssessments.filter(a => a.managerScore !== null).length || 0;
-
-                  const gap = Math.abs(avgLeaderScore - avgManagerScore);
-
-                  return {
-                    category,
-                    gap,
-                    leaderScore: avgLeaderScore,
-                    managerScore: avgManagerScore
-                  };
-                })
-                .filter(item => !isNaN(item.gap) && item.gap > 0)
-                .sort((a, b) => b.gap - a.gap)
-                .slice(0, 3)
-                .map((gapItem, index) => (
-                  <div key={gapItem.category} className="mb-4 last:mb-0">
-                    <div className="flex justify-between items-center">
-                      <p className="font-medium">{index + 1}. {gapItem.category}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#2563eb] text-sm">
-                          {gapItem.leaderScore.toFixed(1)}
-                        </span>
-                        <span className="text-blue-500 font-semibold">
-                          {gapItem.gap.toFixed(1)}
-                        </span>
-                        <span className="text-[#dc2626] text-sm">
-                          {gapItem.managerScore.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Leadership Categories Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LeadershipCategoriesChart assessments={assessments} />
-            </CardContent>
-          </Card>
-        </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Gap Analysis</CardTitle>
+            <CardTitle>Leadership Categories Performance</CardTitle>
           </CardHeader>
           <CardContent>
-            {assessmentData.gaps.length > 0 ? (
-              <GapAnalysis gaps={assessmentData.gaps} />
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                No significant gaps found in the assessment.
-              </p>
-            )}
+            <LeadershipCategoriesChart assessments={assessments} />
           </CardContent>
         </Card>
       </div>
+
+      {/* Gap Analysis Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Gap Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {assessmentData.gaps.length > 0 ? (
+            <GapAnalysis gaps={assessmentData.gaps} />
+          ) : (
+            <p className="text-center text-muted-foreground py-8">
+              No significant gaps found in the assessment.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
