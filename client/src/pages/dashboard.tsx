@@ -54,6 +54,13 @@ interface AssessmentRequest {
   };
 }
 
+interface CategoryScores {
+  [key: string]: {
+    leader: number[];
+    manager: number[];
+  };
+}
+
 // Add the categories mapping from LeadershipCategoriesChart
 const categories = {
   "Character & Integrity": [1, 9, 49, 39, 6],
@@ -191,75 +198,84 @@ export default function Dashboard() {
         const assessments: Assessment[] = await response.json();
         setAssessments(assessments);
 
-        // Calculate category scores
-        const categoryScores = {};
-        Object.keys(categories).forEach(key => {
-          categoryScores[key] = { leader: [] as number[], manager: [] as number[] };
-        });
+        // Initialize category scores with proper typing
+        const categoryScores: CategoryScores = Object.keys(categories).reduce((acc, key) => {
+          acc[key] = { leader: [], manager: [] };
+          return acc;
+        }, {} as CategoryScores);
 
+        // Calculate category scores
         assessments.forEach(assessment => {
           const question = questions.find(q => q.id === assessment.questionId);
           if (!question) return;
 
-          const category = Object.entries(categories).find(([cat, ids]) => ids.includes(assessment.questionId))?.[0];
-          if (category && assessment.leaderScore) {
-            categoryScores[category].leader.push(assessment.leaderScore);
-          }
-          if (category && assessment.managerScore) {
-            categoryScores[category].manager.push(assessment.managerScore);
+          const category = Object.entries(categories).find(([, ids]) => 
+            ids.includes(assessment.questionId)
+          )?.[0];
+
+          if (category) {
+            if (assessment.leaderScore !== null) {
+              categoryScores[category].leader.push(assessment.leaderScore);
+            }
+            if (assessment.managerScore !== null) {
+              categoryScores[category].manager.push(assessment.managerScore);
+            }
           }
         });
 
         // Calculate average scores for each category
-        const leaderScores = Object.keys(categoryScores).map(category => {
-          const scores = categoryScores[category].leader;
-          return scores.length > 0
-            ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+        const leaderScores = Object.values(categoryScores).map(scores => {
+          const validScores = scores.leader;
+          return validScores.length > 0
+            ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length
             : 0;
         });
 
-        const managerScores = Object.keys(categoryScores).map(category => {
-          const scores = categoryScores[category].manager;
-          return scores.length > 0
-            ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+        const managerScores = Object.values(categoryScores).map(scores => {
+          const validScores = scores.manager;
+          return validScores.length > 0
+            ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length
             : 0;
         });
 
-        // Calculate overall scores
-        const selfAssessmentScore = assessments
-          .filter(a => a.leaderScore !== null)
-          .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) /
-          assessments.filter(a => a.leaderScore !== null).length || 0;
+        // Calculate overall scores with proper null handling
+        const validLeaderScores = assessments.filter(a => a.leaderScore !== null);
+        const validManagerScores = assessments.filter(a => a.managerScore !== null);
 
-        const managerAssessmentScore = assessments
-          .filter(a => a.managerScore !== null)
-          .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) /
-          assessments.filter(a => a.managerScore !== null).length || 0;
+        const selfAssessmentScore = validLeaderScores.length > 0
+          ? validLeaderScores.reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) / validLeaderScores.length
+          : 0;
 
-        const overallScore = (selfAssessmentScore + managerAssessmentScore) / 2;
+        const managerAssessmentScore = validManagerScores.length > 0
+          ? validManagerScores.reduce((acc, curr) => acc + (curr.managerScore || 0), 0) / validManagerScores.length
+          : 0;
+
+        const overallScore = (validLeaderScores.length > 0 || validManagerScores.length > 0)
+          ? (selfAssessmentScore + managerAssessmentScore) / (validLeaderScores.length > 0 && validManagerScores.length > 0 ? 2 : 1)
+          : 0;
+
         const scorePercentage = (overallScore / 5) * 100;
 
         // Calculate leadership level
         const currentLevel = calculateLeadershipLevel(overallScore);
 
-        // Calculate significant gaps
+        // Calculate significant gaps with proper null handling
         const significantGaps = assessments
           .filter(a => a.leaderScore !== null && a.managerScore !== null)
           .map(a => {
             const question = questions.find(q => q.id === a.questionId);
-            if (!question || !a.leaderScore || !a.managerScore) return null;
+            if (!question || a.leaderScore === null || a.managerScore === null) return null;
 
             const gap = Math.abs(a.leaderScore - a.managerScore);
             if (gap < 2) return null;
 
-            const category = Object.entries(categories).find(([cat, ids]) => ids.includes(a.questionId))?.[0];
-            return category ? {
-              category: category as "position" | "permission" | "production" | "people" | "pinnacle",
+            return {
+              category: question.category as "position" | "permission" | "production" | "people" | "pinnacle",
               question: question.text,
               leaderScore: a.leaderScore,
               managerScore: a.managerScore,
               gap
-            } : null;
+            };
           })
           .filter((gap): gap is Gap => gap !== null);
 
@@ -351,9 +367,9 @@ export default function Dashboard() {
           <AlertDescription className="pr-24">
             Your manager has completed their assessment. View your updated scores below.
           </AlertDescription>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={dismissNotification}
             className="absolute right-4 top-4"
           >
