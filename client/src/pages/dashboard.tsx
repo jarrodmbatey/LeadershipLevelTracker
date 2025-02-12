@@ -27,7 +27,7 @@ interface Assessment {
 }
 
 interface Gap {
-  category: "positional" | "permission" | "production";
+  category: "position" | "permission" | "production" | "people" | "pinnacle";
   question: string;
   leaderScore: number;
   managerScore: number;
@@ -66,8 +66,8 @@ export default function Dashboard() {
     managerScores: number[];
     gaps: Gap[];
   }>({
-    leaderScores: [0, 0, 0],
-    managerScores: [0, 0, 0],
+    leaderScores: [0, 0, 0,0,0],
+    managerScores: [0, 0, 0,0,0],
     gaps: []
   });
 
@@ -153,9 +153,11 @@ export default function Dashboard() {
 
         // Calculate scores and gaps
         const categoryScores = {
-          positional: { leader: [] as number[], manager: [] as number[] },
+          position: { leader: [] as number[], manager: [] as number[] },
           permission: { leader: [] as number[], manager: [] as number[] },
-          production: { leader: [] as number[], manager: [] as number[] }
+          production: { leader: [] as number[], manager: [] as number[] },
+          people: { leader: [] as number[], manager: [] as number[] },
+          pinnacle: { leader: [] as number[], manager: [] as number[] }
         };
 
         // Process each assessment
@@ -393,20 +395,20 @@ export default function Dashboard() {
             <div>
               <p className="text-sm text-muted-foreground">Self Assessment Score</p>
               <p className="text-2xl font-bold">
-                {(assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 3).toFixed(2)}
+                {(assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 5).toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Manager Assessment Score</p>
               <p className="text-2xl font-bold">
-                {(assessmentData.managerScores.reduce((a, b) => a + b, 0) / 3).toFixed(2)}
+                {(assessmentData.managerScores.reduce((a, b) => a + b, 0) / 5).toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Final Leadership Score</p>
               <p className="text-2xl font-bold">
-                {((assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 3 +
-                  assessmentData.managerScores.reduce((a, b) => a + b, 0) / 3) / 2).toFixed(2)}
+                {((assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 5 +
+                  assessmentData.managerScores.reduce((a, b) => a + b, 0) / 5) / 2).toFixed(2)}
               </p>
             </div>
             <div>
