@@ -11,7 +11,7 @@ export interface IStorage {
   createAssessment(assessment: Omit<Assessment, "id" | "completedAt">): Promise<Assessment>;
   getAssessments(leaderId: number): Promise<Assessment[]>;
   createAssessmentRequest(leaderId: number, managerId: number): Promise<AssessmentRequest>;
-  getPendingAssessmentRequests(): Promise<AssessmentRequest[]>;
+  getManagerAssessmentRequests(managerId: number): Promise<(AssessmentRequest & { leader: User })[]>;
   updateAssessmentRequestStatus(id: number, status: "completed"): Promise<void>;
 }
 
@@ -44,7 +44,7 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(
         and(
-          eq(users.role, role),
+          eq(users.role, role as "admin" | "leader" | "manager"),
           ilike(users.name, `%${searchTerm}%`)
         )
       );
@@ -73,11 +73,28 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  async getPendingAssessmentRequests(): Promise<AssessmentRequest[]> {
-    return await db
-      .select()
+  async getManagerAssessmentRequests(managerId: number): Promise<(AssessmentRequest & { leader: User })[]> {
+    const results = await db
+      .select({
+        id: assessmentRequests.id,
+        leaderId: assessmentRequests.leaderId,
+        managerId: assessmentRequests.managerId,
+        status: assessmentRequests.status,
+        createdAt: assessmentRequests.createdAt,
+        leader: users
+      })
       .from(assessmentRequests)
-      .where(eq(assessmentRequests.status, "pending"));
+      .where(eq(assessmentRequests.managerId, managerId))
+      .innerJoin(users, eq(assessmentRequests.leaderId, users.id));
+
+    return results.map(r => ({
+      id: r.id,
+      leaderId: r.leaderId,
+      managerId: r.managerId,
+      status: r.status,
+      createdAt: r.createdAt,
+      leader: r.leader
+    }));
   }
 
   async updateAssessmentRequestStatus(id: number, status: "completed"): Promise<void> {
