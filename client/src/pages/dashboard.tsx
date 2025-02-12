@@ -391,6 +391,18 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <p className="text-sm text-muted-foreground">Self Assessment Score</p>
+              <p className="text-2xl font-bold">
+                {(assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 3).toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Manager Assessment Score</p>
+              <p className="text-2xl font-bold">
+                {(assessmentData.managerScores.reduce((a, b) => a + b, 0) / 3).toFixed(2)}
+              </p>
+            </div>
+            <div>
               <p className="text-sm text-muted-foreground">Final Leadership Score</p>
               <p className="text-2xl font-bold">
                 {((assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 3 +
