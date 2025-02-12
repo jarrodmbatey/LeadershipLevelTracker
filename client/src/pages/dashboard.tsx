@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
@@ -258,6 +258,13 @@ export default function Dashboard() {
     }
   };
 
+  const categories = questions.reduce((acc, question) => {
+    acc[question.category] = acc[question.category] || [];
+    acc[question.category].push(question.id);
+    return acc;
+  }, {} as { [key: string]: number[] });
+
+
   if (!user) return null;
 
   return (
@@ -274,7 +281,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Show notification for completed assessment */}
       {showCompletedNotification && (
         <Alert>
           <CheckCircle2 className="h-4 w-4" />
@@ -285,7 +291,6 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      {/* Assessment Dialog */}
       <Dialog open={showRequests} onOpenChange={setShowRequests}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -295,7 +300,6 @@ export default function Dashboard() {
           </DialogHeader>
 
           {user.role === 'manager' ? (
-            // Manager View - Show requests to assess others
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
                 {assessmentRequests.map((request) => (
@@ -341,7 +345,6 @@ export default function Dashboard() {
               </div>
             </ScrollArea>
           ) : (
-            // Leader View - Search and request manager assessment
             <div className="space-y-4">
               <Input
                 placeholder="Search by manager name..."
@@ -375,7 +378,6 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Assessment Results Section */}
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -390,6 +392,90 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="grid gap-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ArrowUpIcon className="h-5 w-5 text-green-500" />
+                <CardTitle>Top 3 Strengths</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {Object.entries(categories)
+                .map(([category, questionIds]) => {
+                  const categoryAssessments = assessments.filter(a =>
+                    questionIds.includes(a.questionId)
+                  );
+
+                  const scores = categoryAssessments.reduce((acc, assessment) => {
+                    if (assessment.leaderScore) acc.push(assessment.leaderScore);
+                    if (assessment.managerScore) acc.push(assessment.managerScore);
+                    return acc;
+                  }, [] as number[]);
+
+                  const avgScore = scores.length > 0
+                    ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+                    : 0;
+
+                  return { category, avgScore };
+                })
+                .sort((a, b) => b.avgScore - a.avgScore)
+                .slice(0, 3)
+                .map((strength, index) => (
+                  <div key={strength.category} className="mb-4 last:mb-0">
+                    <div className="flex justify-between items-center">
+                      <p className="font-medium">{index + 1}. {strength.category}</p>
+                      <span className="text-green-500 font-semibold">
+                        {strength.avgScore.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ArrowDownIcon className="h-5 w-5 text-orange-500" />
+                <CardTitle>Top 3 Opportunities</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {Object.entries(categories)
+                .map(([category, questionIds]) => {
+                  const categoryAssessments = assessments.filter(a =>
+                    questionIds.includes(a.questionId)
+                  );
+
+                  const scores = categoryAssessments.reduce((acc, assessment) => {
+                    if (assessment.leaderScore) acc.push(assessment.leaderScore);
+                    if (assessment.managerScore) acc.push(assessment.managerScore);
+                    return acc;
+                  }, [] as number[]);
+
+                  const avgScore = scores.length > 0
+                    ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+                    : 0;
+
+                  return { category, avgScore };
+                })
+                .sort((a, b) => a.avgScore - b.avgScore)
+                .slice(0, 3)
+                .map((opportunity, index) => (
+                  <div key={opportunity.category} className="mb-4 last:mb-0">
+                    <div className="flex justify-between items-center">
+                      <p className="font-medium">{index + 1}. {opportunity.category}</p>
+                      <span className="text-orange-500 font-semibold">
+                        {opportunity.avgScore.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
           <CardHeader>
