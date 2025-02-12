@@ -29,7 +29,7 @@ interface Assessment {
 
 export default function UserDetails({ params }: UserDetailsProps) {
   const { user } = useAuth();
-  const userId = parseInt(params.userId);
+  const userId = params?.userId ? parseInt(params.userId) : null;
 
   const { data: userDetails, isLoading: isLoadingUser } = useQuery<User>({
     queryKey: [`/api/users/${userId}`],
@@ -41,7 +41,7 @@ export default function UserDetails({ params }: UserDetailsProps) {
     enabled: !!userId,
   });
 
-  if (!user || user.role !== "admin") return null;
+  if (!user || user.role !== "admin" || !userId) return null;
   if (isLoadingUser || isLoadingAssessments) return <div>Loading...</div>;
   if (!userDetails) return <div>User not found</div>;
 

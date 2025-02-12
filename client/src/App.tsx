@@ -13,7 +13,14 @@ import Admin from "./pages/admin";
 import UserDetails from "./pages/user-details";
 import NotFound from "./pages/not-found";
 
-function PrivateRoute({ component: Component, params }: { component: any; params?: any }) {
+interface RouteParams {
+  params?: {
+    leaderId?: string;
+    userId?: string;
+  };
+}
+
+function PrivateRoute({ component: Component, params }: { component: any; params?: RouteParams['params'] }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -24,7 +31,7 @@ function PrivateRoute({ component: Component, params }: { component: any; params
     return <Login />;
   }
 
-  return <Component {...params} />;
+  return <Component params={params} />;
 }
 
 function App() {
