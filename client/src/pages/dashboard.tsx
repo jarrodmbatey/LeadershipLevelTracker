@@ -93,22 +93,11 @@ export default function Dashboard() {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
   const [showCompletedNotification, setShowCompletedNotification] = useState(false);
-  const [assessmentData, setAssessmentData] = useState<{
-    leaderScores: number[];
-    managerScores: number[];
-    gaps: Gap[];
-    currentLevel: {
-      level: string;
-      description: string;
-    };
-    scorePercentage: number;
-    overallScore: number;
-    selfAssessmentScore: number;
-    managerAssessmentScore: number;
-  }>({
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [assessmentData, setAssessmentData] = useState({
     leaderScores: [0, 0, 0, 0, 0],
     managerScores: [0, 0, 0, 0, 0],
-    gaps: [],
+    gaps: [] as Gap[],
     currentLevel: {
       level: "",
       description: ""
@@ -118,7 +107,6 @@ export default function Dashboard() {
     selfAssessmentScore: 0,
     managerAssessmentScore: 0
   });
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   useEffect(() => {
     const checkCompletedAssessments = async () => {
@@ -127,13 +115,14 @@ export default function Dashboard() {
       try {
         const response = await fetch(`/api/assessments/${user.id}`);
         if (!response.ok) throw new Error('Failed to fetch assessments');
-        const assessments: Assessment[] = await response.json();
-        setAssessments(assessments);
+        const fetchedAssessments: Assessment[] = await response.json();
 
-        const hasManagerScores = assessments.some(a => a.managerScore !== null);
-        // Check local storage to see if we've already dismissed this notification
+        // Only show notification if not dismissed and has manager scores
+        const hasManagerScores = fetchedAssessments.some(a => a.managerScore !== null);
         const isDismissed = localStorage.getItem('assessmentNotificationDismissed') === 'true';
         setShowCompletedNotification(hasManagerScores && !isDismissed);
+
+        setAssessments(fetchedAssessments);
       } catch (error) {
         console.error('Error checking completed assessments:', error);
       }
@@ -142,167 +131,102 @@ export default function Dashboard() {
     checkCompletedAssessments();
   }, [user]);
 
+  // Separate effect for processing assessment data
   useEffect(() => {
-    const fetchRequests = async () => {
-      if (!user || !showRequests) return;
+    if (!assessments.length) return;
 
-      try {
-        if (user.role === 'manager') {
-          const response = await fetch(`/api/assessment-requests/manager?managerId=${user.id}`, {
-            headers: { 'Content-Type': 'application/json' }
-          });
+    try {
+      // Calculate category scores
+      const categoryScores: Record<string, { leader: number[], manager: number[] }> = {};
 
-          if (!response.ok) throw new Error('Failed to fetch requests');
-          const data = await response.json();
-          setAssessmentRequests(data);
-        }
-      } catch (error) {
-        console.error('Error fetching requests:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load assessment requests.",
-          variant: "destructive"
-        });
-      }
-    };
+      Object.keys(categories).forEach(category => {
+        categoryScores[category] = { leader: [], manager: [] };
+      });
 
-    const searchManagers = async () => {
-      if (!user || !showRequests || user.role !== 'leader' || !searchTerm) return;
+      assessments.forEach(assessment => {
+        const category = Object.entries(categories).find(([_, ids]) => 
+          ids.includes(assessment.questionId)
+        )?.[0];
 
-      try {
-        const response = await fetch(`/api/users?role=manager&search=${encodeURIComponent(searchTerm)}`);
-        if (!response.ok) throw new Error('Failed to search managers');
-        const data = await response.json();
-        setManagers(data);
-      } catch (error) {
-        console.error('Error searching managers:', error);
-        toast({
-          title: "Error",
-          description: "Failed to search managers.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    fetchRequests();
-    searchManagers();
-  }, [user, showRequests, searchTerm]);
-
-  useEffect(() => {
-    const fetchAssessments = async () => {
-      if (!user) return;
-
-      try {
-        const response = await fetch(`/api/assessments/${user.id}`);
-        if (!response.ok) throw new Error('Failed to fetch assessments');
-        const assessments: Assessment[] = await response.json();
-        setAssessments(assessments);
-
-        // Initialize category scores with proper typing
-        const categoryScores: CategoryScores = Object.keys(categories).reduce((acc, key) => {
-          acc[key] = { leader: [], manager: [] };
-          return acc;
-        }, {} as CategoryScores);
-
-        // Calculate category scores
-        assessments.forEach(assessment => {
-          const question = questions.find(q => q.id === assessment.questionId);
-          if (!question) return;
-
-          const category = Object.entries(categories).find(([, ids]) => 
-            ids.includes(assessment.questionId)
-          )?.[0];
-
-          if (category) {
-            if (assessment.leaderScore !== null) {
-              categoryScores[category].leader.push(assessment.leaderScore);
-            }
-            if (assessment.managerScore !== null) {
-              categoryScores[category].manager.push(assessment.managerScore);
-            }
+        if (category) {
+          if (assessment.leaderScore !== null) {
+            categoryScores[category].leader.push(assessment.leaderScore);
           }
-        });
+          if (assessment.managerScore !== null) {
+            categoryScores[category].manager.push(assessment.managerScore);
+          }
+        }
+      });
 
-        // Calculate average scores for each category
-        const leaderScores = Object.values(categoryScores).map(scores => {
-          const validScores = scores.leader;
-          return validScores.length > 0
-            ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length
-            : 0;
-        });
+      const leaderScores = Object.values(categoryScores).map(scores => {
+        const avg = scores.leader.reduce((sum, score) => sum + score, 0);
+        return scores.leader.length ? avg / scores.leader.length : 0;
+      });
 
-        const managerScores = Object.values(categoryScores).map(scores => {
-          const validScores = scores.manager;
-          return validScores.length > 0
-            ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length
-            : 0;
-        });
+      const managerScores = Object.values(categoryScores).map(scores => {
+        const avg = scores.manager.reduce((sum, score) => sum + score, 0);
+        return scores.manager.length ? avg / scores.manager.length : 0;
+      });
 
-        // Calculate overall scores with proper null handling
-        const validLeaderScores = assessments.filter(a => a.leaderScore !== null);
-        const validManagerScores = assessments.filter(a => a.managerScore !== null);
+      // Calculate overall scores
+      const leaderTotal = assessments.filter(a => a.leaderScore !== null);
+      const managerTotal = assessments.filter(a => a.managerScore !== null);
 
-        const selfAssessmentScore = validLeaderScores.length > 0
-          ? validLeaderScores.reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) / validLeaderScores.length
-          : 0;
+      const selfAssessmentScore = leaderTotal.length
+        ? leaderTotal.reduce((sum, a) => sum + (a.leaderScore || 0), 0) / leaderTotal.length
+        : 0;
 
-        const managerAssessmentScore = validManagerScores.length > 0
-          ? validManagerScores.reduce((acc, curr) => acc + (curr.managerScore || 0), 0) / validManagerScores.length
-          : 0;
+      const managerAssessmentScore = managerTotal.length
+        ? managerTotal.reduce((sum, a) => sum + (a.managerScore || 0), 0) / managerTotal.length
+        : 0;
 
-        const overallScore = (validLeaderScores.length > 0 || validManagerScores.length > 0)
-          ? (selfAssessmentScore + managerAssessmentScore) / (validLeaderScores.length > 0 && validManagerScores.length > 0 ? 2 : 1)
-          : 0;
+      const overallScore = (leaderTotal.length || managerTotal.length)
+        ? (selfAssessmentScore + managerAssessmentScore) / 
+          ((leaderTotal.length && managerTotal.length) ? 2 : 1)
+        : 0;
 
-        const scorePercentage = (overallScore / 5) * 100;
+      const scorePercentage = (overallScore / 5) * 100;
+      const currentLevel = calculateLeadershipLevel(overallScore);
 
-        // Calculate leadership level
-        const currentLevel = calculateLeadershipLevel(overallScore);
+      // Calculate gaps
+      const gaps = assessments
+        .filter(a => a.leaderScore !== null && a.managerScore !== null)
+        .map(a => {
+          const question = questions.find(q => q.id === a.questionId);
+          if (!question) return null;
 
-        // Calculate significant gaps with proper null handling
-        const significantGaps = assessments
-          .filter(a => a.leaderScore !== null && a.managerScore !== null)
-          .map(a => {
-            const question = questions.find(q => q.id === a.questionId);
-            if (!question || a.leaderScore === null || a.managerScore === null) return null;
+          const gap = Math.abs((a.leaderScore || 0) - (a.managerScore || 0));
+          if (gap < 2) return null;
 
-            const gap = Math.abs(a.leaderScore - a.managerScore);
-            if (gap < 2) return null;
+          return {
+            category: question.category as "position" | "permission" | "production" | "people" | "pinnacle",
+            question: question.text,
+            leaderScore: a.leaderScore!,
+            managerScore: a.managerScore!,
+            gap
+          };
+        })
+        .filter((gap): gap is Gap => gap !== null);
 
-            return {
-              category: question.category as "position" | "permission" | "production" | "people" | "pinnacle",
-              question: question.text,
-              leaderScore: a.leaderScore,
-              managerScore: a.managerScore,
-              gap
-            };
-          })
-          .filter((gap): gap is Gap => gap !== null);
+      setAssessmentData({
+        leaderScores,
+        managerScores,
+        gaps,
+        currentLevel,
+        scorePercentage,
+        overallScore,
+        selfAssessmentScore,
+        managerAssessmentScore
+      });
+    } catch (error) {
+      console.error('Error processing assessment data:', error);
+    }
+  }, [assessments]);
 
-        // Update state with all calculated values
-        setAssessmentData({
-          leaderScores,
-          managerScores,
-          gaps: significantGaps,
-          currentLevel,
-          scorePercentage,
-          overallScore,
-          selfAssessmentScore,
-          managerAssessmentScore
-        });
-
-      } catch (error) {
-        console.error('Error fetching assessments:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load assessment data.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    fetchAssessments();
-  }, [user]);
+  const dismissNotification = () => {
+    setShowCompletedNotification(false);
+    localStorage.setItem('assessmentNotificationDismissed', 'true');
+  };
 
   const requestManagerAssessment = async (managerId: number) => {
     if (!user) return;
@@ -337,11 +261,6 @@ export default function Dashboard() {
     return leadershipLevels.find(
       level => overallPercentage >= level.range[0] && overallPercentage <= level.range[1]
     ) || leadershipLevels[0]; // Default to first level if no match
-  };
-
-  const dismissNotification = () => {
-    setShowCompletedNotification(false);
-    localStorage.setItem('assessmentNotificationDismissed', 'true');
   };
 
   if (!user) return null;
