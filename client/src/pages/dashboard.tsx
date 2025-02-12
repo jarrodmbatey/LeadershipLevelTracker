@@ -348,7 +348,7 @@ export default function Dashboard() {
       )}
 
       {/* Current Leadership Level Card */}
-      <Card className="bg-primary/5">
+      <Card className="bg-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
         <CardHeader>
           <CardTitle>Current Leadership Level</CardTitle>
         </CardHeader>
@@ -399,7 +399,7 @@ export default function Dashboard() {
       {/* Top 3 Cards Row */}
       <div className="grid grid-cols-3 gap-4">
         {/* Strengths Card */}
-        <Card>
+        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
               <ArrowUpIcon className="h-5 w-5 text-green-500" />
@@ -444,7 +444,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Opportunities Card */}
-        <Card>
+        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
               <ArrowDownIcon className="h-5 w-5 text-orange-500" />
@@ -489,7 +489,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Gaps Card */}
-        <Card>
+        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
               <ArrowRightLeft className="h-5 w-5 text-blue-500" />
@@ -551,7 +551,7 @@ export default function Dashboard() {
 
       {/* Charts Grid */}
       <div className="grid gap-8 md:grid-cols-2">
-        <Card>
+        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <CardTitle>Overall Level Scores</CardTitle>
           </CardHeader>
@@ -565,7 +565,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <CardTitle>Leadership Categories Performance</CardTitle>
           </CardHeader>
