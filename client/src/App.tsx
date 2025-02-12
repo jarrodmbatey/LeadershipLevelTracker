@@ -8,6 +8,7 @@ import Navigation from "./components/Navigation";
 import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import Assessment from "./pages/assessment";
+import SelfAssessment from "./pages/self-assessment";
 import Admin from "./pages/admin";
 import NotFound from "./pages/not-found";
 
@@ -42,8 +43,11 @@ function App() {
             <Route path="/dashboard">
               {() => <PrivateRoute component={Dashboard} />}
             </Route>
-            <Route path="/assessment">
-              {() => <PrivateRoute component={Assessment} />}
+            <Route path="/assessment/:leaderId">
+              {(params) => <PrivateRoute component={Assessment} params={params} />}
+            </Route>
+            <Route path="/self-assessment">
+              {() => <PrivateRoute component={SelfAssessment} />}
             </Route>
             <Route path="/admin">
               {() => <PrivateRoute component={Admin} />}
