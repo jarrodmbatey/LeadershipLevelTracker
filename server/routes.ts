@@ -1,12 +1,16 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertAssessmentSchema } from "@shared/schema";
 import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1, "Password is required")
+});
+
+const assessmentRequestSchema = z.object({
+  leaderId: z.number()
 });
 
 export function registerRoutes(app: Express): Server {
@@ -53,6 +57,49 @@ export function registerRoutes(app: Express): Server {
       }
       console.error('Registration error:', error);
       return res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post("/api/assessments", async (req: Request, res: Response) => {
+    try {
+      const data = insertAssessmentSchema.parse(req.body);
+      const assessment = await storage.createAssessment(data);
+      return res.json(assessment);
+    } catch (error) {
+      console.error('Assessment creation error:', error);
+      return res.status(500).json({ message: "Failed to create assessment" });
+    }
+  });
+
+  app.get("/api/assessments/:leaderId", async (req: Request, res: Response) => {
+    try {
+      const leaderId = parseInt(req.params.leaderId);
+      const assessments = await storage.getAssessments(leaderId);
+      return res.json(assessments);
+    } catch (error) {
+      console.error('Error fetching assessments:', error);
+      return res.status(500).json({ message: "Failed to fetch assessments" });
+    }
+  });
+
+  app.post("/api/assessment-requests", async (req: Request, res: Response) => {
+    try {
+      const { leaderId } = assessmentRequestSchema.parse(req.body);
+      const request = await storage.createAssessmentRequest(leaderId);
+      return res.json(request);
+    } catch (error) {
+      console.error('Error creating assessment request:', error);
+      return res.status(500).json({ message: "Failed to create assessment request" });
+    }
+  });
+
+  app.get("/api/assessment-requests", async (req: Request, res: Response) => {
+    try {
+      const requests = await storage.getPendingAssessmentRequests();
+      return res.json(requests);
+    } catch (error) {
+      console.error('Error fetching assessment requests:', error);
+      return res.status(500).json({ message: "Failed to fetch assessment requests" });
     }
   });
 

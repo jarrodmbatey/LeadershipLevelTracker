@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -12,10 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
 
 interface Assessment {
-  id: string;
+  id: number;
   questionId: number;
-  leaderScore: number;
-  managerScore: number;
+  leaderScore: number | null;
+  managerScore: number | null;
 }
 
 interface Gap {
@@ -44,11 +42,13 @@ export default function Dashboard() {
     if (!user) return;
 
     try {
-      await addDoc(collection(db, "assessment_requests"), {
-        leaderId: user.id,
-        status: "pending",
-        createdAt: new Date().toISOString()
+      const response = await fetch('/api/assessment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaderId: user.id })
       });
+
+      if (!response.ok) throw new Error('Failed to send request');
 
       toast({
         title: "Request Sent",
@@ -67,74 +67,70 @@ export default function Dashboard() {
     const fetchAssessments = async () => {
       if (!user) return;
 
-      const assessmentsRef = collection(db, "assessments");
-      const q = query(assessmentsRef, 
-        viewAsLeader 
-          ? where("leaderId", "==", user.id)
-          : where("managerId", "==", user.id)
-      );
+      try {
+        const response = await fetch(`/api/assessments/${viewAsLeader ? user.id : user.id}`);
+        if (!response.ok) throw new Error('Failed to fetch assessments');
 
-      const querySnapshot = await getDocs(q);
-      const assessments: Assessment[] = [];
-      querySnapshot.forEach((doc) => {
-        assessments.push({ id: doc.id, ...doc.data() } as Assessment);
-      });
+        const assessments: Assessment[] = await response.json();
 
-      // Calculate scores and gaps
-      const categoryScores = {
-        positional: { leader: [] as number[], manager: [] as number[] },
-        permission: { leader: [] as number[], manager: [] as number[] },
-        production: { leader: [] as number[], manager: [] as number[] }
-      };
+        // Calculate scores and gaps
+        const categoryScores = {
+          positional: { leader: [] as number[], manager: [] as number[] },
+          permission: { leader: [] as number[], manager: [] as number[] },
+          production: { leader: [] as number[], manager: [] as number[] }
+        };
 
-      assessments.forEach(assessment => {
-        const question = questions.find(q => q.id === assessment.questionId);
-        if (question) {
-          categoryScores[question.category].leader.push(assessment.leaderScore);
-          categoryScores[question.category].manager.push(assessment.managerScore);
-        }
-      });
-
-      // Calculate average scores for each category
-      const leaderScores = Object.values(categoryScores).map(
-        category => category.leader.length > 0
-          ? category.leader.reduce((a, b) => a + b, 0) / category.leader.length
-          : 0
-      );
-      const managerScores = Object.values(categoryScores).map(
-        category => category.manager.length > 0
-          ? category.manager.reduce((a, b) => a + b, 0) / category.manager.length
-          : 0
-      );
-
-      // Find significant gaps (2+ points difference)
-      const significantGaps = assessments
-        .filter(a => Math.abs(a.leaderScore - a.managerScore) >= 2)
-        .map(a => {
-          const question = questions.find(q => q.id === a.questionId);
-          return {
-            category: question?.category || "",
-            question: question?.text || "",
-            leaderScore: a.leaderScore,
-            managerScore: a.managerScore,
-            gap: Math.abs(a.leaderScore - a.managerScore)
-          };
+        assessments.forEach(assessment => {
+          const question = questions.find(q => q.id === assessment.questionId);
+          if (question && assessment.leaderScore && assessment.managerScore) {
+            categoryScores[question.category].leader.push(assessment.leaderScore);
+            categoryScores[question.category].manager.push(assessment.managerScore);
+          }
         });
 
-      setAssessmentData({
-        leaderScores,
-        managerScores,
-        gaps: significantGaps
-      });
+        // Calculate average scores for each category
+        const leaderScores = Object.values(categoryScores).map(
+          category => category.leader.length > 0
+            ? category.leader.reduce((a, b) => a + b, 0) / category.leader.length
+            : 0
+        );
+        const managerScores = Object.values(categoryScores).map(
+          category => category.manager.length > 0
+            ? category.manager.reduce((a, b) => a + b, 0) / category.manager.length
+            : 0
+        );
+
+        // Find significant gaps (2+ points difference)
+        const significantGaps = assessments
+          .filter(a => a.leaderScore && a.managerScore && Math.abs(a.leaderScore - a.managerScore) >= 2)
+          .map(a => {
+            const question = questions.find(q => q.id === a.questionId);
+            return {
+              category: question?.category || "",
+              question: question?.text || "",
+              leaderScore: a.leaderScore!,
+              managerScore: a.managerScore!,
+              gap: Math.abs(a.leaderScore! - a.managerScore!)
+            };
+          });
+
+        setAssessmentData({
+          leaderScores,
+          managerScores,
+          gaps: significantGaps
+        });
+      } catch (error) {
+        console.error('Error fetching assessments:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load assessment data.",
+          variant: "destructive"
+        });
+      }
     };
 
     fetchAssessments();
   }, [user, viewAsLeader]);
-
-  const generatePDF = () => {
-    // TODO: Implement PDF generation using jsPDF
-    console.log("Generating PDF...");
-  };
 
   if (!user) return null;
 
@@ -157,7 +153,6 @@ export default function Dashboard() {
               Request Manager Assessment
             </Button>
           )}
-          <Button onClick={generatePDF}>Download Report</Button>
         </div>
       </div>
 
