@@ -120,7 +120,13 @@ export function registerRoutes(app: Express): Server {
   app.get("/api/users", async (req: Request, res: Response) => {
     try {
       const { role, search } = req.query;
-      let users = await storage.searchUsers(role as string, search as string);
+      let users;
+
+      if (role || search) {
+        users = await storage.searchUsers(role as string, search as string);
+      } else {
+        users = await storage.getAllUsers();
+      }
 
       // Remove sensitive information
       const sanitizedUsers = users.map(user => ({

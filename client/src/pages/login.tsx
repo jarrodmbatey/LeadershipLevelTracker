@@ -41,8 +41,8 @@ export default function Login() {
 
   const onLogin = async (data: LoginForm) => {
     try {
-      await login(data.email, data.password);
-      setLocation("/dashboard");
+      const redirectPath = await login(data.email, data.password);
+      setLocation(redirectPath);
     } catch (error) {
       toast({
         title: "Error",
