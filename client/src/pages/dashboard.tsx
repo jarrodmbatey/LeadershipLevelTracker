@@ -90,10 +90,26 @@ export default function Dashboard() {
     leaderScores: number[];
     managerScores: number[];
     gaps: Gap[];
+    currentLevel: {
+      level: string;
+      description: string;
+    };
+    scorePercentage: number;
+    overallScore: number;
+    selfAssessmentScore: number;
+    managerAssessmentScore: number;
   }>({
     leaderScores: [0, 0, 0, 0, 0],
     managerScores: [0, 0, 0, 0, 0],
-    gaps: []
+    gaps: [],
+    currentLevel: {
+      level: "",
+      description: ""
+    },
+    scorePercentage: 0,
+    overallScore: 0,
+    selfAssessmentScore: 0,
+    managerAssessmentScore: 0
   });
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
@@ -173,10 +189,11 @@ export default function Dashboard() {
         const assessments: Assessment[] = await response.json();
         setAssessments(assessments);
 
+        // Calculate category scores
         const categoryScores = {};
         Object.keys(categories).forEach(key => {
           categoryScores[key] = { leader: [] as number[], manager: [] as number[] };
-        })
+        });
 
         assessments.forEach(assessment => {
           const question = questions.find(q => q.id === assessment.questionId);
@@ -191,6 +208,7 @@ export default function Dashboard() {
           }
         });
 
+        // Calculate average scores for each category
         const leaderScores = Object.keys(categoryScores).map(category => {
           const scores = categoryScores[category].leader;
           return scores.length > 0
@@ -205,7 +223,24 @@ export default function Dashboard() {
             : 0;
         });
 
+        // Calculate overall scores
+        const selfAssessmentScore = assessments
+          .filter(a => a.leaderScore !== null)
+          .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) / 
+          assessments.filter(a => a.leaderScore !== null).length || 0;
 
+        const managerAssessmentScore = assessments
+          .filter(a => a.managerScore !== null)
+          .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) / 
+          assessments.filter(a => a.managerScore !== null).length || 0;
+
+        const overallScore = (selfAssessmentScore + managerAssessmentScore) / 2;
+        const scorePercentage = (overallScore / 5) * 100;
+
+        // Calculate leadership level
+        const currentLevel = calculateLeadershipLevel(overallScore);
+
+        // Calculate significant gaps
         const significantGaps = assessments
           .filter(a => a.leaderScore !== null && a.managerScore !== null)
           .map(a => {
@@ -217,7 +252,7 @@ export default function Dashboard() {
 
             const category = Object.entries(categories).find(([cat, ids]) => ids.includes(a.questionId))?.[0];
             return category ? {
-              category: category,
+              category: category as "position" | "permission" | "production" | "people" | "pinnacle",
               question: question.text,
               leaderScore: a.leaderScore,
               managerScore: a.managerScore,
@@ -226,11 +261,18 @@ export default function Dashboard() {
           })
           .filter((gap): gap is Gap => gap !== null);
 
+        // Update state with all calculated values
         setAssessmentData({
           leaderScores,
           managerScores,
-          gaps: significantGaps
+          gaps: significantGaps,
+          currentLevel,
+          scorePercentage,
+          overallScore,
+          selfAssessmentScore,
+          managerAssessmentScore
         });
+
       } catch (error) {
         console.error('Error fetching assessments:', error);
         toast({
@@ -313,34 +355,18 @@ export default function Dashboard() {
         <CardContent>
           {assessments.length > 0 ? (
             <div className="space-y-4">
-              {(() => {
-                const averageScore = assessments.reduce((acc, curr) => {
-                  const scores = [];
-                  if (curr.leaderScore !== null) scores.push(curr.leaderScore);
-                  if (curr.managerScore !== null) scores.push(curr.managerScore);
-                  return acc + (scores.reduce((sum, score) => sum + score, 0) / (scores.length || 1));
-                }, 0) / assessments.length;
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">{assessmentData.currentLevel.level}</h3>
+                  <p className="text-muted-foreground">{assessmentData.currentLevel.description}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold">{assessmentData.scorePercentage.toFixed(1)}%</p>
+                  <p className="text-sm text-muted-foreground">Overall Score</p>
+                </div>
+              </div>
 
-                const currentLevel = calculateLeadershipLevel(averageScore);
-                const scorePercentage = ((averageScore / 5) * 100);
-
-                return (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-2xl font-bold">{currentLevel.level}</h3>
-                        <p className="text-muted-foreground">{currentLevel.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-3xl font-bold">{scorePercentage.toFixed(1)}%</p>
-                        <p className="text-sm text-muted-foreground">Overall Score</p>
-                      </div>
-                    </div>
-
-                    <LeadershipLevelBar currentScore={scorePercentage} />
-                  </>
-                );
-              })()}
+              <LeadershipLevelBar currentScore={assessmentData.scorePercentage} />
             </div>
           ) : (
             <p className="text-muted-foreground">Complete an assessment to see your leadership level</p>
@@ -461,34 +487,19 @@ export default function Dashboard() {
             <div>
               <p className="text-sm text-muted-foreground">Self Assessment Score</p>
               <p className="text-2xl font-bold">
-                {(assessments
-                  .filter(a => a.leaderScore !== null)
-                  .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) /
-                  assessments.filter(a => a.leaderScore !== null).length || 0).toFixed(1)}
+                {assessmentData.selfAssessmentScore.toFixed(1)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Manager Assessment Score</p>
               <p className="text-2xl font-bold">
-                {(assessments
-                  .filter(a => a.managerScore !== null)
-                  .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) /
-                  assessments.filter(a => a.managerScore !== null).length || 0).toFixed(1)}
+                {assessmentData.managerAssessmentScore.toFixed(1)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Final Leadership Score</p>
               <p className="text-2xl font-bold">
-                {((
-                  (assessments
-                    .filter(a => a.leaderScore !== null)
-                    .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) /
-                    assessments.filter(a => a.leaderScore !== null).length || 0) +
-                  (assessments
-                    .filter(a => a.managerScore !== null)
-                    .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) /
-                    assessments.filter(a => a.managerScore !== null).length || 0)
-                ) / 2).toFixed(1)}
+                {assessmentData.overallScore.toFixed(1)}
               </p>
             </div>
             <div>
