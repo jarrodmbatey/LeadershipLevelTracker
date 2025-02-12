@@ -487,20 +487,34 @@ export default function Dashboard() {
             <div>
               <p className="text-sm text-muted-foreground">Self Assessment Score</p>
               <p className="text-2xl font-bold">
-                {(assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 5).toFixed(2)}
+                {assessments
+                  .filter(a => a.leaderScore !== null)
+                  .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) / 
+                  assessments.filter(a => a.leaderScore !== null).length || 0}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Manager Assessment Score</p>
               <p className="text-2xl font-bold">
-                {(assessmentData.managerScores.reduce((a, b) => a + b, 0) / 5).toFixed(2)}
+                {assessments
+                  .filter(a => a.managerScore !== null)
+                  .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) / 
+                  assessments.filter(a => a.managerScore !== null).length || 0}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Final Leadership Score</p>
               <p className="text-2xl font-bold">
-                {((assessmentData.leaderScores.reduce((a, b) => a + b, 0) / 5 +
-                  assessmentData.managerScores.reduce((a, b) => a + b, 0) / 5) / 2).toFixed(2)}
+                {(
+                  (assessments
+                    .filter(a => a.leaderScore !== null)
+                    .reduce((acc, curr) => acc + (curr.leaderScore || 0), 0) / 
+                    assessments.filter(a => a.leaderScore !== null).length || 0) +
+                  (assessments
+                    .filter(a => a.managerScore !== null)
+                    .reduce((acc, curr) => acc + (curr.managerScore || 0), 0) / 
+                    assessments.filter(a => a.managerScore !== null).length || 0)
+                ) / 2}
               </p>
             </div>
             <div>
