@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +11,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ScoreChart from "@/components/ScoreChart";
 import GapAnalysis from "@/components/GapAnalysis";
+import AssessmentForm from "@/components/AssessmentForm";
 import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
 import { useLocation } from "wouter";
@@ -56,11 +56,11 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [viewAsLeader, setViewAsLeader] = useState(true);
   const [showManagerSearch, setShowManagerSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [managers, setManagers] = useState<Manager[]>([]);
   const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [assessmentData, setAssessmentData] = useState<{
     leaderScores: number[];
     managerScores: number[];
@@ -71,27 +71,25 @@ export default function Dashboard() {
     gaps: []
   });
 
-  // Fetch assessment requests for managers
+  // Fetch assessment requests where user is the manager
   useEffect(() => {
-    if (user?.role === "manager") {
-      const fetchRequests = async () => {
-        try {
-          const response = await fetch('/api/assessment-requests/manager');
-          if (!response.ok) throw new Error('Failed to fetch requests');
-          const data = await response.json();
-          setAssessmentRequests(data);
-        } catch (error) {
-          console.error('Error fetching requests:', error);
-          toast({
-            title: "Error",
-            description: "Failed to load assessment requests.",
-            variant: "destructive"
-          });
-        }
-      };
+    const fetchRequests = async () => {
+      try {
+        const response = await fetch('/api/assessment-requests/manager');
+        if (!response.ok) throw new Error('Failed to fetch requests');
+        const data = await response.json();
+        setAssessmentRequests(data);
+      } catch (error) {
+        console.error('Error fetching requests:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load assessment requests.",
+          variant: "destructive"
+        });
+      }
+    };
 
-      fetchRequests();
-    }
+    fetchRequests();
   }, [user]);
 
   // Search for managers
@@ -186,6 +184,37 @@ export default function Dashboard() {
     fetchAssessments();
   }, [user]);
 
+  const handleSelfAssessment = async (responses: Record<number, number>) => {
+    if (!user) return;
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetch('/api/assessments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leaderId: user.id,
+          responses
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to submit assessment');
+
+      toast({
+        title: "Assessment Submitted",
+        description: "Your self-assessment has been recorded successfully."
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit assessment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const requestManagerAssessment = async (managerId: number) => {
     if (!user) return;
 
@@ -218,78 +247,106 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
-        <div className="flex items-center space-x-4">
-          {user.role === "manager" && (
-            <div className="flex items-center space-x-2">
-              <Switch
-                checked={!viewAsLeader}
-                onCheckedChange={(checked) => setViewAsLeader(!checked)}
-              />
-              <Label>View as Manager</Label>
-            </div>
-          )}
-          {user.role === "leader" && (
-            <Button onClick={() => setShowManagerSearch(true)} variant="outline">
-              Request Manager Assessment
-            </Button>
-          )}
-        </div>
+        <Button onClick={() => setShowManagerSearch(true)} variant="outline">
+          Request Manager Assessment
+        </Button>
       </div>
 
-      {/* Manager Assessment Requests Section */}
-      {user.role === "manager" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Assessment Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-4">
-                {assessmentRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{request.leader?.name}</p>
-                        <Badge variant={request.status === "completed" ? "secondary" : "default"}>
-                          {request.status === "completed" ? "Completed" : "Pending"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">Project: {request.leader?.project}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Requested on: {new Date(request.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    {request.status === "pending" && (
-                      <Button
-                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
-                        variant="outline"
-                      >
-                        Start Assessment
-                      </Button>
-                    )}
-                    {request.status === "completed" && (
-                      <Button
-                        onClick={() => setLocation(`/assessment/${request.leaderId}`)}
-                        variant="secondary"
-                      >
-                        View Assessment
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                {assessmentRequests.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    No assessment requests found.
-                  </p>
-                )}
+      {/* Self Assessment Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Leadership Self-Assessment</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="instructions">
+            <TabsList>
+              <TabsTrigger value="instructions">Instructions</TabsTrigger>
+              <TabsTrigger value="assessment">Assessment Form</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="instructions" className="space-y-4">
+              <div className="prose max-w-none">
+                <h3>Assessment Instructions</h3>
+                <ul>
+                  <li>Rate each statement on a scale of 1-5</li>
+                  <li>1 = Strongly Disagree, 5 = Strongly Agree</li>
+                  <li>Be honest and objective in your responses</li>
+                  <li>Consider specific examples when rating each statement</li>
+                  <li>Complete all questions in one session</li>
+                </ul>
+
+                <h3>Categories</h3>
+                <ul>
+                  <li><strong>Positional Leadership:</strong> Authority and responsibility in your role</li>
+                  <li><strong>Permission Leadership:</strong> Trust and relationships with team members</li>
+                  <li><strong>Production Leadership:</strong> Results and accountability</li>
+                </ul>
               </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
+            </TabsContent>
+
+            <TabsContent value="assessment">
+              <AssessmentForm
+                onSubmit={handleSelfAssessment}
+                role={user.role}
+                isSubmitting={isSubmitting}
+              />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Requests to Assess Others Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Requests to Assess Others</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[300px] pr-4">
+            <div className="space-y-4">
+              {assessmentRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{request.leader?.name}</p>
+                      <Badge variant={request.status === "completed" ? "secondary" : "default"}>
+                        {request.status === "completed" ? "Completed" : "Pending"}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Project: {request.leader?.project}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Requested on: {new Date(request.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {request.status === "pending" && (
+                    <Button
+                      onClick={() => setLocation(`/assessment/${request.leaderId}`)}
+                      variant="outline"
+                    >
+                      Start Assessment
+                    </Button>
+                  )}
+                  {request.status === "completed" && (
+                    <Button
+                      onClick={() => setLocation(`/assessment/${request.leaderId}`)}
+                      variant="secondary"
+                    >
+                      View Assessment
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {assessmentRequests.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  No assessment requests found.
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
       {/* Manager Search Dialog */}
       <Dialog open={showManagerSearch} onOpenChange={setShowManagerSearch}>
@@ -329,7 +386,7 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Assessment Data Section */}
+      {/* Assessment Results Section */}
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>

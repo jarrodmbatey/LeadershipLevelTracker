@@ -7,14 +7,12 @@ import { ReloadIcon } from "@radix-ui/react-icons";
 
 interface AssessmentFormProps {
   onSubmit: (responses: Record<number, number>) => void;
-  role: "admin" | "leader" | "manager";
   isAssessingLeader?: boolean;
   isSubmitting?: boolean;
 }
 
 export default function AssessmentForm({ 
   onSubmit, 
-  role, 
   isAssessingLeader = false,
   isSubmitting = false 
 }: AssessmentFormProps) {
@@ -28,22 +26,6 @@ export default function AssessmentForm({
     }
     onSubmit(responses);
   };
-
-  if (role === "admin") {
-    return (
-      <div className="text-center p-4 text-muted-foreground">
-        Administrators cannot complete assessments
-      </div>
-    );
-  }
-
-  if (role === "manager" && !isAssessingLeader) {
-    return (
-      <div className="text-center p-4 text-muted-foreground">
-        Please select a leader's assessment request to begin the evaluation.
-      </div>
-    );
-  }
 
   const isComplete = Object.keys(responses).length === questions.length;
 
