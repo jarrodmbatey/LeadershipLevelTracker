@@ -575,22 +575,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Gap Analysis Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Gap Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {assessmentData.gaps.length > 0 ? (
-            <GapAnalysis gaps={assessmentData.gaps} />
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              No significant gaps found in the assessment.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
     </div>
   );
 }
