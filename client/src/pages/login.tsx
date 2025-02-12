@@ -33,7 +33,10 @@ export default function Login() {
   });
 
   const registerForm = useForm<RegisterForm>({
-    resolver: zodResolver(registerSchema)
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: "leader" // Set a default role
+    }
   });
 
   const onLogin = async (data: LoginForm) => {
@@ -83,6 +86,11 @@ export default function Login() {
                     placeholder="Email"
                     {...loginForm.register("email")}
                   />
+                  {loginForm.formState.errors.email && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {loginForm.formState.errors.email.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Input
@@ -90,6 +98,11 @@ export default function Login() {
                     placeholder="Password"
                     {...loginForm.register("password")}
                   />
+                  {loginForm.formState.errors.password && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {loginForm.formState.errors.password.message}
+                    </p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full">
                   Sign In
@@ -105,6 +118,11 @@ export default function Login() {
                     placeholder="Email"
                     {...registerForm.register("email")}
                   />
+                  {registerForm.formState.errors.email && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {registerForm.formState.errors.email.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Input
@@ -112,6 +130,11 @@ export default function Login() {
                     placeholder="Full Name"
                     {...registerForm.register("name")}
                   />
+                  {registerForm.formState.errors.name && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {registerForm.formState.errors.name.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Input
@@ -119,6 +142,11 @@ export default function Login() {
                     placeholder="Project Name"
                     {...registerForm.register("project")}
                   />
+                  {registerForm.formState.errors.project && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {registerForm.formState.errors.project.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Input
@@ -126,6 +154,11 @@ export default function Login() {
                     placeholder="Password"
                     {...registerForm.register("password")}
                   />
+                  {registerForm.formState.errors.password && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {registerForm.formState.errors.password.message}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <Button
@@ -153,6 +186,11 @@ export default function Login() {
                     Manager
                   </Button>
                 </div>
+                {registerForm.formState.errors.role && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {registerForm.formState.errors.role.message}
+                  </p>
+                )}
                 <Button type="submit" className="w-full">
                   Register
                 </Button>
