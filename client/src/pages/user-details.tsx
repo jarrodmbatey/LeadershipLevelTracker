@@ -67,7 +67,7 @@ export default function UserDetails({ params }: UserDetailsProps) {
         throw new Error('Failed to delete assessment');
       }
 
-      queryClient.invalidateQueries([`/api/assessments/${userId}`]);
+      await queryClient.invalidateQueries([`/api/assessments/${userId}`]);
 
       toast({
         title: "Assessment deleted",
@@ -87,67 +87,28 @@ export default function UserDetails({ params }: UserDetailsProps) {
   if (isLoadingUser || isLoadingAssessments) return <div>Loading...</div>;
   if (!userDetails) return <div>User not found</div>;
 
-  const selfAssessments = assessments?.filter(a => a.leaderScore !== null) || [];
-  const managerAssessments = assessments?.filter(a => a.managerScore !== null) || [];
+  // Group assessments by question ID
+  const groupedAssessments = assessments?.reduce((acc, assessment) => {
+    if (!acc[assessment.questionId]) {
+      acc[assessment.questionId] = {
+        questionId: assessment.questionId,
+        id: assessment.id,
+        leaderScore: assessment.leaderScore,
+        managerScore: assessment.managerScore,
+        completedAt: assessment.completedAt
+      };
+    } else {
+      if (assessment.leaderScore !== null) {
+        acc[assessment.questionId].leaderScore = assessment.leaderScore;
+      }
+      if (assessment.managerScore !== null) {
+        acc[assessment.questionId].managerScore = assessment.managerScore;
+      }
+    }
+    return acc;
+  }, {} as Record<number, Assessment>) || {};
 
-  const AssessmentTable = ({ assessments, type }: { assessments: Assessment[], type: 'self' | 'manager' }) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Question ID</TableHead>
-          <TableHead>Score</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {assessments.map((assessment) => (
-          <TableRow key={assessment.id}>
-            <TableCell>{assessment.questionId}</TableCell>
-            <TableCell>
-              {type === 'self' ? assessment.leaderScore : assessment.managerScore}
-            </TableCell>
-            <TableCell>
-              {new Date(assessment.completedAt).toLocaleDateString()}
-            </TableCell>
-            <TableCell>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="icon">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Assessment</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this assessment? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => deleteAssessment(assessment.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </TableCell>
-          </TableRow>
-        ))}
-        {assessments.length === 0 && (
-          <TableRow>
-            <TableCell colSpan={4} className="text-center">
-              No {type === 'self' ? 'self' : 'manager'} assessments completed
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-  );
+  const assessmentsList = Object.values(groupedAssessments);
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -187,23 +148,65 @@ export default function UserDetails({ params }: UserDetailsProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Assessments</CardTitle>
+          <CardTitle>Assessment Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="self" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="self">Self Assessments</TabsTrigger>
-              <TabsTrigger value="manager">Manager Assessments</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="self">
-              <AssessmentTable assessments={selfAssessments} type="self" />
-            </TabsContent>
-
-            <TabsContent value="manager">
-              <AssessmentTable assessments={managerAssessments} type="manager" />
-            </TabsContent>
-          </Tabs>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Question ID</TableHead>
+                <TableHead>Self Score</TableHead>
+                <TableHead>Manager Score</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {assessmentsList.map((assessment) => (
+                <TableRow key={assessment.questionId}>
+                  <TableCell>{assessment.questionId}</TableCell>
+                  <TableCell>{assessment.leaderScore ?? "Not submitted"}</TableCell>
+                  <TableCell>{assessment.managerScore ?? "Not submitted"}</TableCell>
+                  <TableCell>
+                    {new Date(assessment.completedAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Assessment</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this entire assessment record? This will remove both the self-assessment and manager assessment scores for this question. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteAssessment(assessment.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {assessmentsList.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">
+                    No assessments found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
