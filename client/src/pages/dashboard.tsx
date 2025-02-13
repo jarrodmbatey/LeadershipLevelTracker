@@ -546,6 +546,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+            <p className="text-sm text-muted-foreground text-center mt-4">Click For Resources!</p>
           </CardContent>
         </Card>
 
@@ -570,6 +571,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+            <p className="text-sm text-muted-foreground text-center mt-4">Click For Resources!</p>
           </CardContent>
         </Card>
 
@@ -602,6 +604,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+            <p className="text-sm text-muted-foreground text-center mt-4">Click For Resources!</p>
           </CardContent>
         </Card>
       </div>
