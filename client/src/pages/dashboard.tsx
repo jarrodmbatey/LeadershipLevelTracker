@@ -19,6 +19,7 @@ import { questions } from "@shared/schema";
 import { useLocation } from "wouter";
 import LeadershipCategoriesChart from "@/components/LeadershipCategoriesChart";
 import LeadershipLevelBar from "@/components/LeadershipLevelBar";
+import LeadershipCalculationDialog from "@/components/LeadershipCalculationDialog";
 
 interface Assessment {
   id: number;
@@ -105,6 +106,7 @@ export default function Dashboard() {
     selfAssessmentScore: 0,
     managerAssessmentScore: 0
   });
+  const [showCalculation, setShowCalculation] = useState(false);
 
   useEffect(() => {
     const checkCompletedAssessments = async () => {
@@ -364,7 +366,10 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      <Card className="bg-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+      <Card
+        className="bg-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+        onClick={() => setShowCalculation(true)}
+      >
         <CardHeader>
           <CardTitle>Current Leadership Level</CardTitle>
         </CardHeader>
@@ -410,6 +415,18 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      <LeadershipCalculationDialog
+        open={showCalculation}
+        onOpenChange={setShowCalculation}
+        data={{
+          ...assessmentData,
+          currentLevel: {
+            ...assessmentData.currentLevel,
+            range: calculateLeadershipLevel(assessmentData.overallScore).range
+          }
+        }}
+      />
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
