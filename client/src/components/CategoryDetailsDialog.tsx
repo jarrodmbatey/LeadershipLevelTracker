@@ -57,7 +57,7 @@ const resources = {
   "Execution & Results": {
     title: "Becoming a Results-Driven Leader",
     description: "Focusing on outcomes and driving your team towards achieving them.",
-    videoUrl: "https://www.youtube.com/watch?v=example23&autoplay=1"
+    videoUrl: "https://www.youtube.com/watch?v=R9MI4xmTukU&autoplay=1"
   },
   "Innovation & Adaptability": {
     title: "Fostering Innovation in Your Team",
