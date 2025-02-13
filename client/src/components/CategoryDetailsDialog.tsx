@@ -46,9 +46,11 @@ export default function CategoryDetailsDialog({
   };
 
   const formatScore = (score: number | null | undefined) => {
+    // Only return 'No Score' if the score is strictly null or undefined
     if (score === null || score === undefined) {
       return 'No Score';
     }
+    // Format any numeric value, including 0
     return score.toFixed(1);
   };
 
