@@ -294,12 +294,6 @@ export default function Dashboard() {
           .filter(a => a.managerScore !== null)
           .map(a => a.managerScore as number);
 
-        console.log(`Category ${category}:`, {
-          managerScores,
-          avgManagerScore: managerScores.length > 0
-            ? managerScores.reduce((sum, score) => sum + score, 0) / managerScores.length
-            : 0
-        });
 
         const allScores = [...leaderScores, ...managerScores];
         const avgScore = allScores.length > 0
@@ -318,47 +312,26 @@ export default function Dashboard() {
 
         return {
           category,
-          questions: categoryQuestions.map(q => ({
-            ...q,
-            leaderScore: q.leaderScore || null,
-            managerScore: q.managerScore || null
-          })),
+          questions: categoryQuestions,
           avgScore,
           gap,
-          leaderScore: avgLeaderScore || 0,
-          managerScore: avgManagerScore || 0
+          leaderScore: avgLeaderScore,
+          managerScore: avgManagerScore
         };
       });
-
-      console.log('Category Details:', categoryDetails);
 
       // Sort and set category details
       setCategoryDetails({
         strengths: [...categoryScores]
           .sort((a, b) => b.avgScore - a.avgScore)
-          .slice(0, 3)
-          .map(score => ({
-            ...score,
-            leaderScore: score.leaderScore,
-            managerScore: score.managerScore
-          })),
+          .slice(0, 3),
         opportunities: [...categoryScores]
           .sort((a, b) => a.avgScore - b.avgScore)
-          .slice(0, 3)
-          .map(score => ({
-            ...score,
-            leaderScore: score.leaderScore,
-            managerScore: score.managerScore
-          })),
+          .slice(0, 3),
         gaps: [...categoryScores]
           .filter(score => score.gap > 0)
           .sort((a, b) => b.gap - a.gap)
           .slice(0, 3)
-          .map(score => ({
-            ...score,
-            leaderScore: score.leaderScore,
-            managerScore: score.managerScore
-          }))
       });
 
     } catch (error) {
