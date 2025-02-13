@@ -311,7 +311,11 @@ export default function Dashboard() {
 
         return {
           category,
-          questions: categoryQuestions,
+          questions: categoryQuestions.map(q => ({
+            ...q,
+            leaderScore: q.leaderScore !== undefined ? q.leaderScore : null,
+            managerScore: q.managerScore !== undefined ? q.managerScore : null
+          })),
           avgScore,
           gap,
           leaderScore: avgLeaderScore,

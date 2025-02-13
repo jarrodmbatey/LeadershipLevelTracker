@@ -64,13 +64,13 @@ export default function CategoryDetailsDialog({
                       {type === 'gaps' ? (
                         <>
                           <span className="text-[#2563eb] text-sm">
-                            {category.leaderScore?.toFixed(1) ?? 'N/A'}
+                            {category.leaderScore?.toFixed(1)}
                           </span>
                           <span className="text-blue-500 font-semibold">
                             {category.gap?.toFixed(1)}
                           </span>
                           <span className="text-[#dc2626] text-sm">
-                            {category.managerScore?.toFixed(1) ?? 'N/A'}
+                            {category.managerScore?.toFixed(1)}
                           </span>
                         </>
                       ) : (
@@ -90,13 +90,13 @@ export default function CategoryDetailsDialog({
                           <div className="p-2 rounded bg-background/50">
                             <p className="text-sm text-muted-foreground">Self Assessment</p>
                             <p className="text-lg font-semibold text-[#2563eb]">
-                              {question.leaderScore?.toFixed(1) ?? 'Not Rated'}
+                              {question.leaderScore !== null ? question.leaderScore.toFixed(1) : '-'}
                             </p>
                           </div>
                           <div className="p-2 rounded bg-background/50">
                             <p className="text-sm text-muted-foreground">Manager Assessment</p>
                             <p className="text-lg font-semibold text-[#dc2626]">
-                              {question.managerScore?.toFixed(1) ?? 'Not Rated'}
+                              {question.managerScore !== null ? question.managerScore.toFixed(1) : '-'}
                             </p>
                           </div>
                         </div>
