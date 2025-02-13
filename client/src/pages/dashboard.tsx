@@ -480,12 +480,12 @@ export default function Dashboard() {
                   <p className="text-muted-foreground">{assessmentData.currentLevel.description}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold">{assessmentData.scorePercentage.toFixed(1)}%</p>
+                  <p className="text-3xl font-bold">{assessmentData.overallScore.toFixed(1)}</p>
                   <p className="text-sm text-muted-foreground">Overall Score</p>
                 </div>
               </div>
 
-              <LeadershipLevelBar currentScore={assessmentData.scorePercentage} />
+              <LeadershipLevelBar currentScore={assessmentData.overallScore} />
 
               <div className="grid grid-cols-3 gap-8 py-4">
                 <div className="text-center">
