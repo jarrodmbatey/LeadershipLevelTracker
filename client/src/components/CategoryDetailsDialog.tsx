@@ -64,17 +64,21 @@ export default function CategoryDetailsDialog({
                     <div className="flex items-center gap-2">
                       {type === 'gaps' ? (
                         <>
-                          <span className="text-[#2563eb] text-sm">Self</span>
+                          <span className="text-[#2563eb] text-sm">
+                            {category.leaderScore?.toFixed(1) ?? 'N/A'}
+                          </span>
                           <span className="text-blue-500 font-semibold">
                             {category.gap?.toFixed(1)}
                           </span>
-                          <span className="text-[#dc2626] text-sm">Manager</span>
+                          <span className="text-[#dc2626] text-sm">
+                            {category.managerScore?.toFixed(1) ?? 'N/A'}
+                          </span>
                         </>
                       ) : (
                         <span className={`font-semibold ${
                           type === 'strengths' ? 'text-green-500' : 'text-orange-500'
                         }`}>
-                          {category.avgScore?.toFixed(2)}
+                          {category.avgScore.toFixed(2)}
                         </span>
                       )}
                     </div>
