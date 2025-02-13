@@ -12,9 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, ArrowUpIcon, ArrowDownIcon, ArrowRightLeft } from "lucide-react";
+import { CheckCircle2, ArrowUpIcon, ArrowDownIcon, ArrowRightLeft, Bell } from "lucide-react";
 import ScoreChart from "@/components/ScoreChart";
-import GapAnalysis from "@/components/GapAnalysis";
 import { useToast } from "@/hooks/use-toast";
 import { questions } from "@shared/schema";
 import { useLocation } from "wouter";
@@ -61,7 +60,6 @@ interface CategoryScores {
   };
 }
 
-// Add the categories mapping from LeadershipCategoriesChart
 const categories = {
   "Character & Integrity": [1, 9, 49, 39, 6],
   "Communication & Influence": [7, 4, 15, 11, 42],
@@ -75,7 +73,6 @@ const categories = {
   "Reputation & Influence": [47, 48, 43, 42, 41]
 };
 
-// Add leadership levels definition
 const leadershipLevels = [
   { level: "Position (Rights)", range: [1, 39], description: "Authority and formal leadership role" },
   { level: "Permission (Relationships)", range: [40, 59], description: "Building trust and influence" },
@@ -93,6 +90,7 @@ export default function Dashboard() {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [assessmentRequests, setAssessmentRequests] = useState<AssessmentRequest[]>([]);
   const [showCompletedNotification, setShowCompletedNotification] = useState(false);
+  const [showRequestNotification, setShowRequestNotification] = useState(false);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [assessmentData, setAssessmentData] = useState({
     leaderScores: [0, 0, 0, 0, 0],
@@ -117,7 +115,6 @@ export default function Dashboard() {
         if (!response.ok) throw new Error('Failed to fetch assessments');
         const fetchedAssessments: Assessment[] = await response.json();
 
-        // Only show notification if not dismissed and has manager scores
         const hasManagerScores = fetchedAssessments.some(a => a.managerScore !== null);
         const isDismissed = localStorage.getItem('assessmentNotificationDismissed') === 'true';
         setShowCompletedNotification(hasManagerScores && !isDismissed);
@@ -131,14 +128,34 @@ export default function Dashboard() {
     checkCompletedAssessments();
   }, [user]);
 
-  // Separate effect for processing assessment data
+  useEffect(() => {
+    const checkAssessmentRequests = async () => {
+      if (!user || user.role !== 'manager') return;
+
+      try {
+        const response = await fetch(`/api/assessment-requests/manager?managerId=${user.id}`);
+        if (!response.ok) throw new Error('Failed to fetch requests');
+        const requests: AssessmentRequest[] = await response.json();
+
+        setAssessmentRequests(requests);
+
+        const hasPendingRequests = requests.some(r => r.status === 'pending');
+        const isDismissed = localStorage.getItem('requestNotificationDismissed') === 'true';
+        setShowRequestNotification(hasPendingRequests && !isDismissed);
+      } catch (error) {
+        console.error('Error checking assessment requests:', error);
+      }
+    };
+
+    checkAssessmentRequests();
+  }, [user]);
+
+
   useEffect(() => {
     if (!assessments.length) return;
 
     try {
-      // Calculate category scores
       const categoryScores: Record<string, { leader: number[], manager: number[] }> = {};
-
       Object.keys(categories).forEach(category => {
         categoryScores[category] = { leader: [], manager: [] };
       });
@@ -168,7 +185,6 @@ export default function Dashboard() {
         return scores.manager.length ? avg / scores.manager.length : 0;
       });
 
-      // Calculate overall scores
       const leaderTotal = assessments.filter(a => a.leaderScore !== null);
       const managerTotal = assessments.filter(a => a.managerScore !== null);
 
@@ -188,7 +204,6 @@ export default function Dashboard() {
       const scorePercentage = (overallScore / 5) * 100;
       const currentLevel = calculateLeadershipLevel(overallScore);
 
-      // Calculate gaps
       const gaps = assessments
         .filter(a => a.leaderScore !== null && a.managerScore !== null)
         .map(a => {
@@ -223,9 +238,14 @@ export default function Dashboard() {
     }
   }, [assessments]);
 
-  const dismissNotification = () => {
+  const dismissCompletedNotification = () => {
     setShowCompletedNotification(false);
     localStorage.setItem('assessmentNotificationDismissed', 'true');
+  };
+
+  const dismissRequestNotification = () => {
+    setShowRequestNotification(false);
+    localStorage.setItem('requestNotificationDismissed', 'true');
   };
 
   const requestManagerAssessment = async (managerId: number) => {
@@ -254,16 +274,14 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate leadership level
   const calculateLeadershipLevel = (totalScore: number) => {
-    const maxPossibleScore = 5; // Max score per question
+    const maxPossibleScore = 5;
     const overallPercentage = (totalScore / maxPossibleScore) * 100;
     return leadershipLevels.find(
       level => overallPercentage >= level.range[0] && overallPercentage <= level.range[1]
-    ) || leadershipLevels[0]; // Default to first level if no match
+    ) || leadershipLevels[0];
   };
 
-  // Add back the useEffect for fetching requests and searching managers
   useEffect(() => {
     const fetchRequests = async () => {
       if (!user || !showRequests) return;
@@ -320,7 +338,7 @@ export default function Dashboard() {
           <Button
             variant="outline"
             size="sm"
-            onClick={dismissNotification}
+            onClick={dismissCompletedNotification}
             className="absolute right-4 top-4"
           >
             Got It!
@@ -328,7 +346,24 @@ export default function Dashboard() {
         </Alert>
       )}
 
-      {/* Current Leadership Level Card */}
+      {showRequestNotification && (
+        <Alert className="relative">
+          <Bell className="h-4 w-4" />
+          <AlertTitle>New Assessment Requests</AlertTitle>
+          <AlertDescription className="pr-24">
+            You have pending leadership assessment requests to review.
+          </AlertDescription>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={dismissRequestNotification}
+            className="absolute right-4 top-4"
+          >
+            Got It!
+          </Button>
+        </Alert>
+      )}
+
       <Card className="bg-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
         <CardHeader>
           <CardTitle>Current Leadership Level</CardTitle>
@@ -349,7 +384,6 @@ export default function Dashboard() {
 
               <LeadershipLevelBar currentScore={assessmentData.scorePercentage} />
 
-              {/* Statistics Row */}
               <div className="grid grid-cols-3 gap-8 py-4">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Self Assessment</p>
@@ -377,9 +411,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Top 3 Cards Row */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Strengths Card */}
         <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -424,7 +456,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Opportunities Card */}
         <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -469,7 +500,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Gaps Card */}
         <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -530,7 +560,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Charts Grid */}
       <div className="grid gap-8 md:grid-cols-2">
         <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
           <CardHeader>
