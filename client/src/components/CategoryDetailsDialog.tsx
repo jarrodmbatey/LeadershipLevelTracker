@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { questions } from "@shared/schema";
 
 interface CategoryDetailsDialogProps {
   open: boolean;
