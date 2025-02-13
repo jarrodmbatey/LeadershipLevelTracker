@@ -144,7 +144,7 @@ export default function Dashboard() {
       });
 
       assessments.forEach(assessment => {
-        const category = Object.entries(categories).find(([_, ids]) => 
+        const category = Object.entries(categories).find(([_, ids]) =>
           ids.includes(assessment.questionId)
         )?.[0];
 
@@ -181,7 +181,7 @@ export default function Dashboard() {
         : 0;
 
       const overallScore = (leaderTotal.length || managerTotal.length)
-        ? (selfAssessmentScore + managerAssessmentScore) / 
+        ? (selfAssessmentScore + managerAssessmentScore) /
           ((leaderTotal.length && managerTotal.length) ? 2 : 1)
         : 0;
 
@@ -262,6 +262,37 @@ export default function Dashboard() {
       level => overallPercentage >= level.range[0] && overallPercentage <= level.range[1]
     ) || leadershipLevels[0]; // Default to first level if no match
   };
+
+  // Add back the useEffect for fetching requests and searching managers
+  useEffect(() => {
+    const fetchRequests = async () => {
+      if (!user || !showRequests) return;
+
+      try {
+        if (user.role === 'manager') {
+          const response = await fetch(`/api/assessment-requests/manager?managerId=${user.id}`);
+          if (!response.ok) throw new Error('Failed to fetch requests');
+          const data = await response.json();
+          setAssessmentRequests(data);
+        } else if (user.role === 'leader' && searchTerm) {
+          const response = await fetch(`/api/users?role=manager&search=${encodeURIComponent(searchTerm)}`);
+          if (!response.ok) throw new Error('Failed to search managers');
+          const data = await response.json();
+          setManagers(data);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load data.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchRequests();
+  }, [user, showRequests, searchTerm]);
+
 
   if (!user) return null;
 
@@ -525,6 +556,74 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      <Dialog open={showRequests} onOpenChange={setShowRequests}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {user?.role === 'manager' ? 'Assessment Requests' : 'Request Manager Assessment'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {user?.role === 'leader' ? (
+            <div className="space-y-4">
+              <Input
+                placeholder="Search managers by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <ScrollArea className="h-[300px]">
+                {managers.map((manager) => (
+                  <div
+                    key={manager.id}
+                    className="flex items-center justify-between p-4 hover:bg-accent rounded-lg cursor-pointer"
+                    onClick={() => requestManagerAssessment(manager.id)}
+                  >
+                    <div>
+                      <p className="font-medium">{manager.name}</p>
+                      <p className="text-sm text-muted-foreground">{manager.email}</p>
+                    </div>
+                    <Button size="sm">Request</Button>
+                  </div>
+                ))}
+                {searchTerm && managers.length === 0 && (
+                  <p className="text-center text-muted-foreground p-4">
+                    No managers found
+                  </p>
+                )}
+              </ScrollArea>
+            </div>
+          ) : (
+            <ScrollArea className="h-[300px]">
+              {assessmentRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-4 border-b last:border-0"
+                >
+                  <div>
+                    <p className="font-medium">{request.leader?.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {request.leader?.project}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Requested: {new Date(request.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setLocation(`/assessment/${request.leaderId}`)}
+                  >
+                    Start Assessment
+                  </Button>
+                </div>
+              ))}
+              {assessmentRequests.length === 0 && (
+                <p className="text-center text-muted-foreground p-4">
+                  No pending requests
+                </p>
+              )}
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
