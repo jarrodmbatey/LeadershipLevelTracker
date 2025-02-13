@@ -67,7 +67,7 @@ const resources = {
   "Reputation & Influence": {
     title: "Creating a Lasting Impact as a Leader",
     description: "Ways to leave a positive and enduring influence on your team and organization.",
-    videoUrl: "https://www.youtube.com/watch?v=example29&autoplay=1"
+    videoUrl: "https://youtu.be/y2VU_euFK9Y?si=lVZ5QCSiBauWN0wC&autoplay=1"
   }
 } as const;
 
