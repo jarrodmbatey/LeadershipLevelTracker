@@ -85,18 +85,18 @@ export default function CategoryDetailsDialog({
                   <div className="space-y-4">
                     {category.questions.map(question => (
                       <div key={question.id} className="p-4 bg-muted rounded-lg">
-                        <p className="mb-2">{question.text}</p>
+                        <p className="mb-2 font-medium">{question.text}</p>
                         <div className="grid grid-cols-2 gap-4 mt-2">
-                          <div>
+                          <div className="p-2 rounded bg-background/50">
                             <p className="text-sm text-muted-foreground">Self Assessment</p>
                             <p className="text-lg font-semibold text-[#2563eb]">
-                              {question.leaderScore?.toFixed(1) ?? 'N/A'}
+                              {question.leaderScore?.toFixed(1) ?? 'Not Rated'}
                             </p>
                           </div>
-                          <div>
+                          <div className="p-2 rounded bg-background/50">
                             <p className="text-sm text-muted-foreground">Manager Assessment</p>
                             <p className="text-lg font-semibold text-[#dc2626]">
-                              {question.managerScore?.toFixed(1) ?? 'N/A'}
+                              {question.managerScore?.toFixed(1) ?? 'Not Rated'}
                             </p>
                           </div>
                         </div>

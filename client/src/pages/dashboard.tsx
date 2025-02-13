@@ -272,8 +272,8 @@ export default function Dashboard() {
           return {
             id,
             text: question?.text || '',
-            leaderScore: assessment?.leaderScore || null,
-            managerScore: assessment?.managerScore || null
+            leaderScore: assessment?.leaderScore,
+            managerScore: assessment?.managerScore
           };
         });
         categoryQuestionsMap.set(category, categoryQuestions);
@@ -281,6 +281,7 @@ export default function Dashboard() {
 
       // Calculate averages for each category
       const categoryScores = Object.entries(categories).map(([category, questionIds]) => {
+        const categoryQuestions = categoryQuestionsMap.get(category) || [];
         const categoryAssessments = assessments.filter(a =>
           questionIds.includes(a.questionId)
         );
@@ -310,7 +311,7 @@ export default function Dashboard() {
 
         return {
           category,
-          questions: categoryQuestionsMap.get(category) || [],
+          questions: categoryQuestions,
           avgScore,
           gap,
           leaderScore: avgLeaderScore,
@@ -320,8 +321,12 @@ export default function Dashboard() {
 
       // Sort and set category details
       setCategoryDetails({
-        strengths: [...categoryScores].sort((a, b) => b.avgScore - a.avgScore).slice(0, 3),
-        opportunities: [...categoryScores].sort((a, b) => a.avgScore - b.avgScore).slice(0, 3),
+        strengths: [...categoryScores]
+          .sort((a, b) => b.avgScore - a.avgScore)
+          .slice(0, 3),
+        opportunities: [...categoryScores]
+          .sort((a, b) => a.avgScore - b.avgScore)
+          .slice(0, 3),
         gaps: [...categoryScores]
           .filter(score => score.gap > 0)
           .sort((a, b) => b.gap - a.gap)
