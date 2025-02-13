@@ -480,7 +480,6 @@ export default function Dashboard() {
                   <p className="text-muted-foreground">{assessmentData.currentLevel.description}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold">{assessmentData.scorePercentage.toFixed(1)}%</p>
                   <p className="text-sm text-muted-foreground">Overall Score</p>
                 </div>
               </div>

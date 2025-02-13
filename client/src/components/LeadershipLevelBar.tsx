@@ -18,7 +18,7 @@ export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarP
   const dotPosition = `${currentScore}%`;
 
   return (
-    <div className="relative pt-6 pb-8">
+    <div className="relative pt-6 pb-2">
       {/* Level labels above */}
       <div className="absolute top-0 left-0 right-0 flex">
         {levels.map((level) => (
@@ -48,22 +48,6 @@ export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarP
               width: `${level.range[1] - level.range[0]}%`
             }}
           />
-        ))}
-      </div>
-
-      {/* Percentage ranges below */}
-      <div className="absolute bottom-0 left-0 right-0 flex">
-        {levels.map((level) => (
-          <div 
-            key={level.name}
-            className="text-xs text-center text-muted-foreground"
-            style={{ 
-              width: `${level.range[1] - level.range[0]}%`,
-              marginLeft: level.range[0] === 0 ? '0' : undefined
-            }}
-          >
-            {level.range[0]}-{level.range[1]}%
-          </div>
         ))}
       </div>
 
