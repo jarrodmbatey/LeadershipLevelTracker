@@ -37,7 +37,7 @@ const resources = {
   "Accountability & Decision-Making": {
     title: "Fostering Accountability in the Workplace | FranklinCovey",
     description: "Explore strategies to build a culture of accountability and improve decision-making processes within your team.",
-    videoUrl: "https://www.franklincovey.com/blog/fostering-accountability-in-the-workplace/"
+    videoUrl: "https://youtu.be/TM5w0N8_VJg?si=q5H_kAm21jVGyhaH&autoplay=1"
   },
   "Emotional Intelligence & Relationships": {
     title: "Building Confidence, Emotional Intelligence, and Leadership Abilities",
