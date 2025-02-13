@@ -294,6 +294,13 @@ export default function Dashboard() {
           .filter(a => a.managerScore !== null)
           .map(a => a.managerScore as number);
 
+        console.log(`Category ${category}:`, {
+          managerScores,
+          avgManagerScore: managerScores.length > 0
+            ? managerScores.reduce((sum, score) => sum + score, 0) / managerScores.length
+            : 0
+        });
+
         const allScores = [...leaderScores, ...managerScores];
         const avgScore = allScores.length > 0
           ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
@@ -322,6 +329,8 @@ export default function Dashboard() {
           managerScore: avgManagerScore || 0
         };
       });
+
+      console.log('Category Details:', categoryDetails);
 
       // Sort and set category details
       setCategoryDetails({
