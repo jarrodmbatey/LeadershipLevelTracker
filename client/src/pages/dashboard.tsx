@@ -306,11 +306,15 @@ export default function Dashboard() {
           ? managerScores.reduce((sum, score) => sum + score, 0) / managerScores.length
           : 0;
 
+        const gap = Math.abs(avgLeaderScore - avgManagerScore);
+
         return {
           category,
           questions: categoryQuestionsMap.get(category) || [],
           avgScore,
-          gap: Math.abs(avgLeaderScore - avgManagerScore)
+          gap,
+          leaderScore: avgLeaderScore,
+          managerScore: avgManagerScore
         };
       });
 
@@ -318,7 +322,10 @@ export default function Dashboard() {
       setCategoryDetails({
         strengths: [...categoryScores].sort((a, b) => b.avgScore - a.avgScore).slice(0, 3),
         opportunities: [...categoryScores].sort((a, b) => a.avgScore - b.avgScore).slice(0, 3),
-        gaps: [...categoryScores].sort((a, b) => b.gap - a.gap).slice(0, 3)
+        gaps: [...categoryScores]
+          .filter(score => score.gap > 0)
+          .sort((a, b) => b.gap - a.gap)
+          .slice(0, 3)
       });
 
     } catch (error) {
@@ -579,13 +586,13 @@ export default function Dashboard() {
                   <p className="font-medium">{index + 1}. {gapItem.category}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-[#2563eb] text-sm">
-                      {gapItem.leaderScore.toFixed(1)}
+                      {(gapItem.leaderScore || 0).toFixed(1)}
                     </span>
                     <span className="text-blue-500 font-semibold">
                       {gapItem.gap.toFixed(1)}
                     </span>
                     <span className="text-[#dc2626] text-sm">
-                      {gapItem.managerScore.toFixed(1)}
+                      {(gapItem.managerScore || 0).toFixed(1)}
                     </span>
                   </div>
                 </div>

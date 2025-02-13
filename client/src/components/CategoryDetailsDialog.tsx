@@ -20,8 +20,10 @@ interface CategoryDetailsDialogProps {
       leaderScore: number | null;
       managerScore: number | null;
     }>;
-    avgScore?: number;
+    avgScore: number;
     gap?: number;
+    leaderScore?: number;
+    managerScore?: number;
   }>;
 }
 
