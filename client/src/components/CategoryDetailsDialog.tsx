@@ -45,6 +45,13 @@ export default function CategoryDetailsDialog({
     }
   };
 
+  const formatScore = (score: number | null | undefined) => {
+    if (score === null || score === undefined) {
+      return 'No Score';
+    }
+    return score.toFixed(1);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -64,13 +71,13 @@ export default function CategoryDetailsDialog({
                       {type === 'gaps' ? (
                         <>
                           <span className="text-[#2563eb] text-sm">
-                            {category.leaderScore && category.leaderScore.toFixed(1)}
+                            {formatScore(category.leaderScore)}
                           </span>
                           <span className="text-blue-500 font-semibold">
-                            {category.gap && category.gap.toFixed(1)}
+                            {formatScore(category.gap)}
                           </span>
                           <span className="text-[#dc2626] text-sm">
-                            {category.managerScore && category.managerScore.toFixed(1)}
+                            {formatScore(category.managerScore)}
                           </span>
                         </>
                       ) : (
@@ -90,13 +97,13 @@ export default function CategoryDetailsDialog({
                           <div className="p-2 rounded bg-background/50">
                             <p className="text-sm text-muted-foreground">Self Assessment</p>
                             <p className="text-lg font-semibold text-[#2563eb]">
-                              {question.leaderScore && question.leaderScore.toFixed(1)}
+                              {formatScore(question.leaderScore)}
                             </p>
                           </div>
                           <div className="p-2 rounded bg-background/50">
                             <p className="text-sm text-muted-foreground">Manager Assessment</p>
                             <p className="text-lg font-semibold text-[#dc2626]">
-                              {question.managerScore && question.managerScore.toFixed(1)}
+                              {formatScore(question.managerScore)}
                             </p>
                           </div>
                         </div>
