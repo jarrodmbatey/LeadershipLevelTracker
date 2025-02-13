@@ -14,9 +14,8 @@ export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarP
     { name: "Pinnacle", range: [95, 100], color: "bg-yellow-400" }
   ];
 
-  // Calculate the position of the indicator dot based on the score percentage
-  const scorePercentage = (currentScore / 100) * 100; // Corrected percentage calculation
-  const dotPosition = `${scorePercentage}%`;
+  // Calculate the position of the indicator dot
+  const dotPosition = `${currentScore}%`;
 
   return (
     <div className="relative pt-6 pb-8">
@@ -52,6 +51,21 @@ export default function LeadershipLevelBar({ currentScore }: LeadershipLevelBarP
         ))}
       </div>
 
+      {/* Percentage ranges below */}
+      <div className="absolute bottom-0 left-0 right-0 flex">
+        {levels.map((level) => (
+          <div 
+            key={level.name}
+            className="text-xs text-center text-muted-foreground"
+            style={{ 
+              width: `${level.range[1] - level.range[0]}%`,
+              marginLeft: level.range[0] === 0 ? '0' : undefined
+            }}
+          >
+            {level.range[0]}-{level.range[1]}%
+          </div>
+        ))}
+      </div>
 
       {/* Current position indicator */}
       <div 
