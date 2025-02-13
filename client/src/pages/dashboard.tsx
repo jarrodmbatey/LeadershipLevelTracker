@@ -465,8 +465,7 @@ export default function Dashboard() {
       )}
 
       <Card
-        className="bg-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
-        onClick={() => setShowCalculation(true)}
+        className="bg-primary/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
       >
         <CardHeader>
           <CardTitle>Current Leadership Level</CardTitle>
