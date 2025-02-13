@@ -20,6 +20,7 @@ import { useLocation } from "wouter";
 import LeadershipCategoriesChart from "@/components/LeadershipCategoriesChart";
 import LeadershipLevelBar from "@/components/LeadershipLevelBar";
 import LeadershipCalculationDialog from "@/components/LeadershipCalculationDialog";
+import CategoryDetailsDialog from "@/components/CategoryDetailsDialog";
 
 interface Assessment {
   id: number;
@@ -107,6 +108,18 @@ export default function Dashboard() {
     managerAssessmentScore: 0
   });
   const [showCalculation, setShowCalculation] = useState(false);
+  const [showStrengths, setShowStrengths] = useState(false);
+  const [showOpportunities, setShowOpportunities] = useState(false);
+  const [showGaps, setShowGaps] = useState(false);
+  const [categoryDetails, setCategoryDetails] = useState<{
+    strengths: any[];
+    opportunities: any[];
+    gaps: any[];
+  }>({
+    strengths: [],
+    opportunities: [],
+    gaps: []
+  });
 
   useEffect(() => {
     const checkCompletedAssessments = async () => {
@@ -240,6 +253,79 @@ export default function Dashboard() {
     }
   }, [assessments]);
 
+  useEffect(() => {
+    if (!assessments.length) return;
+
+    try {
+      const categoryQuestionsMap = new Map<string, Array<{
+        id: number;
+        text: string;
+        leaderScore: number | null;
+        managerScore: number | null;
+      }>>();
+
+      // Group questions by category
+      Object.entries(categories).forEach(([category, questionIds]) => {
+        const categoryQuestions = questionIds.map(id => {
+          const assessment = assessments.find(a => a.questionId === id);
+          const question = questions.find(q => q.id === id);
+          return {
+            id,
+            text: question?.text || '',
+            leaderScore: assessment?.leaderScore || null,
+            managerScore: assessment?.managerScore || null
+          };
+        });
+        categoryQuestionsMap.set(category, categoryQuestions);
+      });
+
+      // Calculate averages for each category
+      const categoryScores = Object.entries(categories).map(([category, questionIds]) => {
+        const categoryAssessments = assessments.filter(a =>
+          questionIds.includes(a.questionId)
+        );
+
+        const leaderScores = categoryAssessments
+          .filter(a => a.leaderScore !== null)
+          .map(a => a.leaderScore as number);
+
+        const managerScores = categoryAssessments
+          .filter(a => a.managerScore !== null)
+          .map(a => a.managerScore as number);
+
+        const allScores = [...leaderScores, ...managerScores];
+        const avgScore = allScores.length > 0
+          ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
+          : 0;
+
+        const avgLeaderScore = leaderScores.length > 0
+          ? leaderScores.reduce((sum, score) => sum + score, 0) / leaderScores.length
+          : 0;
+
+        const avgManagerScore = managerScores.length > 0
+          ? managerScores.reduce((sum, score) => sum + score, 0) / managerScores.length
+          : 0;
+
+        return {
+          category,
+          questions: categoryQuestionsMap.get(category) || [],
+          avgScore,
+          gap: Math.abs(avgLeaderScore - avgManagerScore)
+        };
+      });
+
+      // Sort and set category details
+      setCategoryDetails({
+        strengths: [...categoryScores].sort((a, b) => b.avgScore - a.avgScore).slice(0, 3),
+        opportunities: [...categoryScores].sort((a, b) => a.avgScore - b.avgScore).slice(0, 3),
+        gaps: [...categoryScores].sort((a, b) => b.gap - a.gap).slice(0, 3)
+      });
+
+    } catch (error) {
+      console.error('Error processing category details:', error);
+    }
+  }, [assessments]);
+
   const dismissCompletedNotification = () => {
     setShowCompletedNotification(false);
     localStorage.setItem('assessmentNotificationDismissed', 'true');
@@ -312,7 +398,6 @@ export default function Dashboard() {
 
     fetchRequests();
   }, [user, showRequests, searchTerm]);
-
 
   if (!user) return null;
 
@@ -429,7 +514,10 @@ export default function Dashboard() {
       />
 
       <div className="grid grid-cols-3 gap-4">
-        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+        <Card
+          className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+          onClick={() => setShowStrengths(true)}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <ArrowUpIcon className="h-5 w-5 text-green-500" />
@@ -437,43 +525,23 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {Object.entries(categories)
-              .map(([category, questionIds]) => {
-                const categoryAssessments = assessments.filter(a =>
-                  questionIds.includes(a.questionId)
-                );
-
-                const leaderScores = categoryAssessments
-                  .filter(a => a.leaderScore !== null)
-                  .map(a => a.leaderScore as number);
-
-                const managerScores = categoryAssessments
-                  .filter(a => a.managerScore !== null)
-                  .map(a => a.managerScore as number);
-
-                const allScores = [...leaderScores, ...managerScores];
-                const avgScore = allScores.length > 0
-                  ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
-                  : 0;
-
-                return { category, avgScore };
-              })
-              .sort((a, b) => b.avgScore - a.avgScore)
-              .slice(0, 3)
-              .map((strength, index) => (
-                <div key={strength.category} className="mb-4 last:mb-0">
-                  <div className="flex justify-between items-center">
-                    <p className="font-medium">{index + 1}. {strength.category}</p>
-                    <span className="text-green-500 font-semibold">
-                      {strength.avgScore.toFixed(2)}
-                    </span>
-                  </div>
+            {categoryDetails.strengths.map((strength, index) => (
+              <div key={strength.category} className="mb-4 last:mb-0">
+                <div className="flex justify-between items-center">
+                  <p className="font-medium">{index + 1}. {strength.category}</p>
+                  <span className="text-green-500 font-semibold">
+                    {strength.avgScore.toFixed(2)}
+                  </span>
                 </div>
-              ))}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
-        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+        <Card
+          className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+          onClick={() => setShowOpportunities(true)}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <ArrowDownIcon className="h-5 w-5 text-orange-500" />
@@ -481,43 +549,23 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {Object.entries(categories)
-              .map(([category, questionIds]) => {
-                const categoryAssessments = assessments.filter(a =>
-                  questionIds.includes(a.questionId)
-                );
-
-                const leaderScores = categoryAssessments
-                  .filter(a => a.leaderScore !== null)
-                  .map(a => a.leaderScore as number);
-
-                const managerScores = categoryAssessments
-                  .filter(a => a.managerScore !== null)
-                  .map(a => a.managerScore as number);
-
-                const allScores = [...leaderScores, ...managerScores];
-                const avgScore = allScores.length > 0
-                  ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length
-                  : 0;
-
-                return { category, avgScore };
-              })
-              .sort((a, b) => a.avgScore - b.avgScore)
-              .slice(0, 3)
-              .map((opportunity, index) => (
-                <div key={opportunity.category} className="mb-4 last:mb-0">
-                  <div className="flex justify-between items-center">
-                    <p className="font-medium">{index + 1}. {opportunity.category}</p>
-                    <span className="text-orange-500 font-semibold">
-                      {opportunity.avgScore.toFixed(2)}
-                    </span>
-                  </div>
+            {categoryDetails.opportunities.map((opportunity, index) => (
+              <div key={opportunity.category} className="mb-4 last:mb-0">
+                <div className="flex justify-between items-center">
+                  <p className="font-medium">{index + 1}. {opportunity.category}</p>
+                  <span className="text-orange-500 font-semibold">
+                    {opportunity.avgScore.toFixed(2)}
+                  </span>
                 </div>
-              ))}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
-        <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+        <Card
+          className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+          onClick={() => setShowGaps(true)}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <ArrowRightLeft className="h-5 w-5 text-blue-500" />
@@ -525,57 +573,48 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {Object.entries(categories)
-              .map(([category, questionIds]) => {
-                const categoryAssessments = assessments.filter(a =>
-                  questionIds.includes(a.questionId)
-                );
-
-                const avgLeaderScore = categoryAssessments
-                  .filter(a => a.leaderScore !== null)
-                  .map(a => a.leaderScore as number)
-                  .reduce((sum, score) => sum + score, 0) /
-                  categoryAssessments.filter(a => a.leaderScore !== null).length || 0;
-
-                const avgManagerScore = categoryAssessments
-                  .filter(a => a.managerScore !== null)
-                  .map(a => a.managerScore as number)
-                  .reduce((sum, score) => sum + score, 0) /
-                  categoryAssessments.filter(a => a.managerScore !== null).length || 0;
-
-                const gap = Math.abs(avgLeaderScore - avgManagerScore);
-
-                return {
-                  category,
-                  gap,
-                  leaderScore: avgLeaderScore,
-                  managerScore: avgManagerScore
-                };
-              })
-              .filter(item => !isNaN(item.gap) && item.gap > 0)
-              .sort((a, b) => b.gap - a.gap)
-              .slice(0, 3)
-              .map((gapItem, index) => (
-                <div key={gapItem.category} className="mb-4 last:mb-0">
-                  <div className="flex justify-between items-center">
-                    <p className="font-medium">{index + 1}. {gapItem.category}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#2563eb] text-sm">
-                        {gapItem.leaderScore.toFixed(1)}
-                      </span>
-                      <span className="text-blue-500 font-semibold">
-                        {gapItem.gap.toFixed(1)}
-                      </span>
-                      <span className="text-[#dc2626] text-sm">
-                        {gapItem.managerScore.toFixed(1)}
-                      </span>
-                    </div>
+            {categoryDetails.gaps.map((gapItem, index) => (
+              <div key={gapItem.category} className="mb-4 last:mb-0">
+                <div className="flex justify-between items-center">
+                  <p className="font-medium">{index + 1}. {gapItem.category}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#2563eb] text-sm">
+                      {gapItem.leaderScore.toFixed(1)}
+                    </span>
+                    <span className="text-blue-500 font-semibold">
+                      {gapItem.gap.toFixed(1)}
+                    </span>
+                    <span className="text-[#dc2626] text-sm">
+                      {gapItem.managerScore.toFixed(1)}
+                    </span>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
+
+      <CategoryDetailsDialog
+        open={showStrengths}
+        onOpenChange={setShowStrengths}
+        type="strengths"
+        categoryScores={categoryDetails.strengths}
+      />
+
+      <CategoryDetailsDialog
+        open={showOpportunities}
+        onOpenChange={setShowOpportunities}
+        type="opportunities"
+        categoryScores={categoryDetails.opportunities}
+      />
+
+      <CategoryDetailsDialog
+        open={showGaps}
+        onOpenChange={setShowGaps}
+        type="gaps"
+        categoryScores={categoryDetails.gaps}
+      />
 
       <div className="grid gap-8 md:grid-cols-2">
         <Card className="transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
